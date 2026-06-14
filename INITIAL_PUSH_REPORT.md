@@ -116,6 +116,26 @@ intentional `change-me-local-token` / `dev-token-change-me` placeholders
 in `*.example` files, dev-mode defaults in source, and
 `HomeNetIQ.md` (user-owned).
 
+## 6.5 CI fix: httpx dependency added
+
+The first remote CI run failed with:
+
+```
+ModuleNotFoundError: No module named 'httpx'
+RuntimeError: The starlette.testclient module requires the httpx package to be installed.
+```
+
+Root cause: `tests/test_api.py` uses `fastapi.testclient.TestClient`,
+which depends on `httpx`. `httpx` was present in the local dev venv
+but was not declared in `backend/requirements.txt`.
+
+Fix: added `httpx==0.28.1` to `backend/requirements.txt` with a comment
+explaining that it is test-only (pulled in by FastAPI's TestClient).
+The requirements file remains a single source of truth for both
+runtime and test installs; no second `requirements-dev.txt` is needed.
+
+After the fix, `pytest tests/ -v` and `make test` both pass 91/91.
+
 ## 7. Test result
 
 ```

@@ -21,3 +21,8 @@ requests==2.32.3
 streamlit==1.41.1
 pandas==2.2.3
 pytest==8.3.4
+# Test-only: FastAPI's TestClient (used in tests/test_api.py) requires httpx.
+# Kept in this file so `pip install -r backend/requirements.txt` is enough
+# for both runtime and tests.
+httpx==0.28.1
+
