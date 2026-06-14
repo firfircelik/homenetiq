@@ -1,0 +1,23 @@
+# HomeNetIQ backend, dashboard ve agent bağımlılıkları.
+# Bu tek dosya tüm bileşenler için yeterlidir.
+#
+# Python sürümü önerisi:
+#   - 3.11 veya 3.12 (Raspberry Pi OS Bookworm ile birlikte gelir; en iyi uyum).
+#   - 3.13 da çalışır.
+#   - 3.14 ÖNERİLMEZ: pydantic-core 2.10.x için wheel yoktur, kaynaktan
+#     derleme gerekir ve bu yavaştır. 3.14 kullanmak istersen
+#     pydantic'i 2.13+ sürümüne yükselt (API uyumlu).
+#
+# Kurulum:
+#   python3 -m venv .venv
+#   source .venv/bin/activate
+#   pip install -r backend/requirements.txt
+
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+PyYAML==6.0.2
+requests==2.32.3
+streamlit==1.41.1
+pandas==2.2.3
+pytest==8.3.4

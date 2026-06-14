@@ -1,0 +1,24 @@
+[Unit]
+Description=HomeNetIQ Kali Wi-Fi Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# ŞABLONDUR. Kurulumdan önce aşağıdaki alanları kendi cihazınıza göre düzenleyin:
+#   - User=            : Linux kullanıcı adı (ör. "firat")
+#   - WorkingDirectory : Repo kökü
+#   - ExecStart .venv  : Sanal ortam python yolu
+#
+# `iw` komutu bazı sistemlerde root veya CAP_NET_ADMIN gerektirir.
+# Bunu vermek için aşağıdaki iki satırı aktif edin (yorumu kaldırın):
+#   CapabilityBoundingSet=CAP_NET_ADMIN
+#   AmbientCapabilities=CAP_NET_ADMIN
+# Bu sayede servisi root yapmadan çalıştırırsınız.
+User=firat
+WorkingDirectory=/home/firat/homenetiq
+ExecStart=/home/firat/homenetiq/.venv/bin/python collectors/kali_wifi_agent.py --config config/kali_agent.yaml
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

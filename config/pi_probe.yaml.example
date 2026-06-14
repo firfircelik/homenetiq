@@ -1,0 +1,28 @@
+device:
+  id: "raspberry-pi"
+  name: "Raspberry Pi Backend Probe"
+  type: "network_probe"
+  os: "raspberry-pi-os"
+  agent_version: "1.0.0"
+
+backend:
+  url: "http://127.0.0.1:8080/api/v1/metrics"
+  token: "change-me-local-token"
+
+collector:
+  interval_seconds: 30
+  retry_delay_seconds: 10
+  timeout_seconds: 10
+
+privacy:
+  mode: "redact"
+  salt: ""
+
+targets:
+  gateway_ip: "192.168.1.1"
+  ap_ip: "192.168.1.103"
+  internet_ip: "1.1.1.1"
+  dns_domains:
+    - "google.com"
+    - "github.com"
+    - "openai.com"

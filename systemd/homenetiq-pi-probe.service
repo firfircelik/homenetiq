@@ -1,0 +1,18 @@
+[Unit]
+Description=HomeNetIQ Raspberry Pi Network Probe
+After=homenetiq-backend.service
+Wants=homenetiq-backend.service
+
+[Service]
+# ŞABLONDUR. Kurulumdan önce aşağıdaki alanları kendi cihazınıza göre düzenleyin:
+#   - User=            : Linux kullanıcı adı
+#   - WorkingDirectory : Repo kökü
+#   - ExecStart .venv  : Sanal ortam python yolu
+User=pi
+WorkingDirectory=/home/pi/homenetiq
+ExecStart=/home/pi/homenetiq/.venv/bin/python probes/pi_network_probe.py --config config/pi_probe.yaml
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

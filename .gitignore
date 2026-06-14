@@ -1,0 +1,46 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# --- Virtualenv ---
+.venv/
+venv/
+env/
+
+# --- Test / cache ---
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Project secrets / local config ---
+# Real config files must NOT be committed. Only the *.example templates
+# are version-controlled.
+.env
+backend/.env
+config/backend.env
+config/*.yaml
+!config/*.yaml.example
+
+# --- Runtime data / logs ---
+*.sqlite3
+*.db
+data/
+logs/
+*.log
+
+# --- Streamlit ---
+.streamlit/secrets.toml
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# --- Stray runtime artifacts ---
+nul
