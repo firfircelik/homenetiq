@@ -170,6 +170,19 @@ make mesh-once    # one tick; drop --once for the continuous loop
 
 Details: `docs/MESH_INTEGRATION.md`.
 
+#### One-command demo stack (no Docker)
+
+To run everything at once — coordinator, relay, mesh agent, backend,
+collector and dashboard — with health checks and clean shutdown:
+
+```bash
+./scripts/run-all.sh
+# Dashboard: http://localhost:8501  →  "🔐 Mesh VPN"
+# Stop: Ctrl+C
+```
+
+Requires the meshlink checkout next to this repo (or `MESHLINK_REPO=<path>`).
+
 ## systemd services
 
 There are 4 unit files in `systemd/`. **They must be edited for your
