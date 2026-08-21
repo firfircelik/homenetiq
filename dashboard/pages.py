@@ -6,6 +6,7 @@ backend as needed. This keeps `streamlit_app.py` as a thin router.
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 import pandas as pd
@@ -17,7 +18,9 @@ from .api_client import (
     get_devices,
     get_latest_metrics,
     get_mesh_events,
+    get_settings,
     get_summary,
+    update_settings,
 )
 from .formatters import (
     collect_recent_issues,
@@ -441,6 +444,46 @@ def render_raw_metrics() -> None:
 
     st.subheader("JSON Debug")
     st.json(metrics[:5])
+
+
+def render_settings() -> None:
+    st.header("⚙️ Settings")
+    try:
+        current = get_settings()
+    except ApiUnavailable as exc:
+        st.error(str(exc))
+        return
+
+    cols = st.columns(3)
+    cols[0].metric("GET Auth", "on" if current.get("get_auth") else "off")
+    cols[1].metric("Mesh Pubkey", "configured" if current.get("mesh_pubkey_set") else "missing")
+    cols[2].metric("Backend", get_backend_url())
+
+    st.subheader("Notifications (ntfy / webhook)")
+    st.caption(
+        "Mesh olaylarında (peer down/up, path değişimi) bildirim gönderilir. "
+        "Örnek: https://ntfy.sh/benim-ag-kanalim — boş bırakmak kapatır."
+    )
+    new_url = st.text_input(
+        "Notify URL",
+        value=current.get("notify_url") or "",
+        placeholder="https://ntfy.sh/my-topic",
+    )
+    token = st.text_input("API Token (POST için gerekli)", type="password",
+                          value=os.getenv("HOMENETIQ_API_TOKEN", ""))
+    if st.button("Save", type="primary"):
+        try:
+            update_settings({"notify_url": new_url.strip()}, token=token or None)
+            st.success("Ayar kaydedildi ✅ (kalıcı: data/settings.json)")
+            st.cache_data.clear()
+        except ApiUnavailable as exc:
+            st.error(f"Kaydedilemedi: {exc}")
+
+    st.divider()
+    st.subheader("Hızlı komutlar")
+    st.code("./scripts/run-all.sh                      # tüm yığın (bu makine host)", language="bash")
+    st.code("./scripts/join.sh <HOST_IP> <isim>       # ikinci cihaz katılımı", language="bash")
+    st.code("make mesh-once                            # mesh sağlık örneği (tek tick)", language="bash")
 
 
 def render_about() -> None:

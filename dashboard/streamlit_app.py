@@ -20,6 +20,7 @@ PAGES = [
     ("Issues & Root Cause", "🧩", pages.render_issues),
     ("Recommendations", "💡", pages.render_recommendations),
     ("Raw Metrics", "🔍", pages.render_raw_metrics),
+    ("Settings", "⚙️", pages.render_settings),
     ("About / Setup", "ℹ️", pages.render_about),
 ]
 

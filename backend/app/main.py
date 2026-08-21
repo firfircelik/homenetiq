@@ -49,6 +49,16 @@ def require_token(authorization: str | None = Header(default=None)) -> None:
     if the backend is exposed to the public internet.
     """
 
+    _check_token(authorization)
+
+
+def maybe_token(authorization: str | None = Header(default=None)) -> None:
+    """Same check as require_token, but only when GET auth is enabled."""
+    if settings.get_auth:
+        _check_token(authorization)
+
+
+def _check_token(authorization: str | None) -> None:
     if not settings.require_auth:
         return
     expected = f"Bearer {settings.api_token}"
@@ -140,33 +150,56 @@ def ingest_metric(metric: MetricIn):
     )
 
 
-@app.get("/api/v1/metrics/latest")
+@app.get("/api/v1/metrics/latest", dependencies=[Depends(maybe_token)])
 def get_latest_metrics(limit: int = 50):
     return latest_metrics(limit=limit)
 
 
-@app.get("/api/v1/mesh/events")
+@app.get("/api/v1/mesh/events", dependencies=[Depends(maybe_token)])
 def get_mesh_events(limit: int = 50):
     """Recent mesh state-change events (peer up/down, path switches)."""
     return list_mesh_events(limit=limit)
 
 
-@app.get("/api/v1/devices")
+@app.get("/api/v1/settings")
+def get_settings_view():
+    """Operational settings as seen by the backend (secrets omitted)."""
+    return {
+        "notify_url": settings.notify_url,
+        "mesh_pubkey_set": bool(settings.mesh_pubkey),
+        "require_auth": settings.require_auth,
+        "get_auth": settings.get_auth,
+        "stale_after_seconds": settings.stale_after_seconds,
+        "offline_after_seconds": settings.offline_after_seconds,
+    }
+
+
+@app.post("/api/v1/settings", dependencies=[Depends(require_token)])
+def update_settings(update: dict):
+    """Persist runtime-editable settings (currently: notify_url)."""
+    try:
+        applied = settings.save_overrides(update)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return {"status": "updated", "applied": applied}
+
+
+@app.get("/api/v1/devices", dependencies=[Depends(maybe_token)])
 def get_devices():
     return list_devices(settings.stale_after_seconds, settings.offline_after_seconds)
 
 
-@app.get("/api/v1/devices/{device_id}/latest")
+@app.get("/api/v1/devices/{device_id}/latest", dependencies=[Depends(maybe_token)])
 def get_device_latest(device_id: str, limit: int = 50):
     return latest_metrics_for_device(device_id=device_id, limit=limit)
 
 
-@app.get("/api/v1/summary")
+@app.get("/api/v1/summary", dependencies=[Depends(maybe_token)])
 def get_summary(limit: int = 200):
     return summary_last_metrics(limit=limit)
 
 
-@app.get("/api/v1/anomalies")
+@app.get("/api/v1/anomalies", dependencies=[Depends(maybe_token)])
 def get_anomalies(limit: int = 50):
     # In v1, an anomaly is interpreted as quality != good.
     rows = latest_metrics(limit=limit * 3)

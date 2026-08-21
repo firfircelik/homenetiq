@@ -26,6 +26,7 @@ def isolated_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("HOMENETIQ_DB_PATH", str(db_path))
     monkeypatch.setenv("HOMENETIQ_API_TOKEN", "test-token")
     monkeypatch.setenv("HOMENETIQ_REQUIRE_AUTH", "true")
+    monkeypatch.setenv("HOMENETIQ_SETTINGS_FILE", str(tmp_path / "settings.json"))
 
     # Test-caller modules may have imported these before `isolated_db`
     # ran; reload them so the new env values take effect.

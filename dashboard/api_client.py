@@ -77,3 +77,25 @@ def get_mesh_events(limit: int = 20) -> list[dict[str, Any]]:
 
 def health() -> dict[str, Any]:
     return _request("/health")
+
+
+def get_settings() -> dict[str, Any]:
+    return _request("/api/v1/settings")
+
+
+def update_settings(update: dict[str, Any], token: str | None = None) -> dict[str, Any]:
+    """POST /api/v1/settings. Requires the Bearer token when auth is on."""
+    headers = {"Content-Type": "application/json", "Accept": "application/json"}
+    tok = token if token is not None else get_api_token()
+    if tok:
+        headers["Authorization"] = f"Bearer {tok}"
+    url = get_backend_url() + "/api/v1/settings"
+    try:
+        response = requests.post(url, json=update, headers=headers, timeout=DEFAULT_TIMEOUT)
+    except requests.RequestException as exc:
+        raise ApiUnavailable(f"Cannot reach backend ({url}). Error: {exc}") from exc
+    if response.status_code >= 400:
+        raise ApiUnavailable(
+            f"Backend returned HTTP {response.status_code}: {response.text[:200]}"
+        )
+    return response.json()

@@ -45,6 +45,14 @@ for cand in \
 do
   if [ -n "$cand" ] && [ -x "$cand" ]; then AGENT="$cand"; break; fi
 done
+
+# Otomatik derleme: repo var + go var ama binary yok → kendin derle
+if [ -z "$AGENT" ] && [ -d "$MESHLINK_REPO" ] && command -v go >/dev/null 2>&1; then
+  log "meshlink derleniyor ($MESHLINK_REPO) ..."
+  (cd "$MESHLINK_REPO" && make build >/dev/null) || die "derleme başarısız"
+  AGENT="$MESHLINK_REPO/bin/agent"
+fi
+
 [ -n "$AGENT" ] || die "meshlink agent bulunamadı. Şunlardan biri olsun:
   - scripts/install.sh çalıştır (PATH'e meshlink-agent koyar)
   - ya da: MESHLINK_REPO=<meshlink-repo-yolu> $0 $HOST_IP"
