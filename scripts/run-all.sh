@@ -25,6 +25,11 @@ cd "$ROOT"
 
 MESHLINK_REPO="${MESHLINK_REPO:-$ROOT/../network-project}"
 BIND="${BIND:-127.0.0.1}"
+# Dinleme ile hedef adresi AYRI tut: 0.0.0.0 "tüm arayüzlerde dinle" demektir
+# ama agent'ın STUN/coordinator PAKETİ için hedef olarak geçersizdir.
+AGENT_HOST="${AGENT_HOST:-$BIND}"
+[ "$AGENT_HOST" = "0.0.0.0" ] && AGENT_HOST="127.0.0.1"
+URL_HOST="$BIND"; [ "$URL_HOST" = "0.0.0.0" ] && URL_HOST="127.0.0.1"
 TOKEN="${HOMENETIQ_API_TOKEN:-change-me-local-token}"
 DATA="$ROOT/data"
 LOGS="$DATA/logs"
@@ -125,7 +130,7 @@ device:
   agent_version: "1.0.0"
 
 backend:
-  url: "http://$BIND:8080/api/v1/metrics"
+  url: "http://$URL_HOST:8080/api/v1/metrics"
   token: "$TOKEN"
 
 collector:
@@ -142,10 +147,10 @@ meshlink:
   name: "b"
   keyfile: "$DATA/key.b"
   data: "0.0.0.0:19502"
-  coordinator: "$BIND:19200"
+  coordinator: "$AGENT_HOST:19200"
   coord_pubkey: "$PUB"
-  stun: "$BIND:19201"
-  relay: "$BIND:19205"
+  stun: "$AGENT_HOST:19201"
+  relay: "$AGENT_HOST:19205"
   probe_peer: "a"
 EOF
   log "config yazıldı (pubkey: ${PUB:0:16}…)"
@@ -171,9 +176,11 @@ sleep 0.4
 
 log "agent a başlatılıyor (kalıcı kimlik: $DATA/key.a) ..."
 launch agenta "$MESH_AGENT" up --name a --keyfile "$DATA/key.a" --data 0.0.0.0:19501 \
-  --coordinator "$BIND:19200" --coord-pubkey "$PUB" \
-  --stun "$BIND:19201" --relay "$BIND:19205"
+  --coordinator "$AGENT_HOST:19200" --coord-pubkey "$PUB" \
+  --stun "$AGENT_HOST:19201" --relay "$AGENT_HOST:19205"
+# Agent gerçekten kaydolana kadar bekle-kontrol et
 sleep 2
+wait_for "agent a kaydoldu" 20 ps -p "$(pgrep -f 'bin/agent up --name a' | head -1)"
 
 log "backend başlatılıyor ..."
 export HOMENETIQ_API_TOKEN="$TOKEN"
