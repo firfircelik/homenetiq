@@ -102,6 +102,9 @@ sudo systemctl enable --now homenetiq-mesh-agent
 Pinli coordinator public key'ini host backend'inden kendisi çeker ve
 mesh agent'ı otomatik başlatır.
 
+Bildirimler: `HOMENETIQ_NOTIFY_URL=https://ntfy.sh/<kanal>` ile mesh olayları
+(peer down/up, path değişimi) telefonuna düşer; ⚙️ Settings sayfasından canlı
+düzenlenebilir. Gerçek overlay trafik: `sudo ./scripts/tun-pair.sh server|client`.
 Detay: `docs/MESH_INTEGRATION.md`.
 
 ## systemd

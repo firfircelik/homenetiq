@@ -56,6 +56,27 @@ Key config fields (`meshlink:` section):
 > **persistent** keyfile `data/coordinator.key`. Run your real coordinator
 > with that same file, otherwise agents correctly reject it (key pinning).
 
+## Notifications & events
+
+Set `HOMENETIQ_NOTIFY_URL` (e.g. an ntfy topic) and every mesh state change —
+peer down/up, direct↔relay switch — is POSTed there **and** stored in the
+`mesh_events` table, exposed at `GET /api/v1/mesh/events` and shown in the
+dashboard's "Recent Events" feed. The URL is also editable live from the
+dashboard's "⚙️ Settings" page (persisted to `data/settings.json`).
+
+## Real VPN traffic (TUN, two devices)
+
+```sh
+# HOST machine (root):
+sudo ./scripts/tun-pair.sh server
+# CLIENT machine:
+sudo ./scripts/tun-pair.sh client <HOST_LAN_IP>
+# then real traffic: ping 10.42.0.1 / ssh user@10.42.0.1
+```
+
+Overlay subnet is 10.42.0.0/24 (host .1, client .2). Requires root on both
+ends (TUN device creation).
+
 ## Joining a client device (one command)
 
 On the second device:

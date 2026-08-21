@@ -27,6 +27,7 @@ from .formatters import (
     collect_recent_recommendations,
     count_active_issues,
     filter_metrics_by_type,
+    fmt_bytes,
     fmt_time_ago,
     fmt_timestamp,
     latest_per_device,
@@ -320,6 +321,10 @@ def render_mesh() -> None:
             "Path": paths,
             "RTT (ms)": df["rtt_ms"],
             "Rekeys": df["rekeys"],
+            "Traffic (TX/RX)": [
+                f"{fmt_bytes(tx)} / {fmt_bytes(rx)}"
+                for tx, rx in zip(df["bytes_sent"], df["bytes_recv"])
+            ],
             "Session Age (s)": df["session_age_s"].round(0),
             "Score": df["quality_score"],
             "Health": df["quality"].map(quality_label),

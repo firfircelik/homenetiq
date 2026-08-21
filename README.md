@@ -3,7 +3,7 @@
 [![CI](https://github.com/firfircelik/homenetiq/actions/workflows/ci.yml/badge.svg)](https://github.com/firfircelik/homenetiq/actions/workflows/ci.yml)
 ![Status: Release Candidate](https://img.shields.io/badge/status-release--candidate-blue)
 ![Python: 3.11 | 3.12](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue)
-![Tests: 100/100](https://img.shields.io/badge/tests-100%2F100-brightgreen)
+![Tests: 110/110](https://img.shields.io/badge/tests-110%2F110-brightgreen)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
 HomeNetIQ is a self-hosted network intelligence platform that measures the
@@ -129,6 +129,7 @@ The dashboard opens at <http://localhost:8501>.
 | Issues & Root Cause | Recent issues and root-cause distribution |
 | Recommendations | Deduped, prioritised recommendation list |
 | Raw Metrics | Raw JSON view (debug) |
+| Settings | Live operational settings (notification webhook editor), quick commands |
 | About / Setup | Project description, connection info, privacy |
 
 #### Access from another device

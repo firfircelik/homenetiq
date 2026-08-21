@@ -112,6 +112,8 @@ def payloads_from_snapshot(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
         payload["rtt_ms"] = float(rtt) if rtt is not None else None
         payload["rekeys"] = int(p.get("rekeys") or 0)
         payload["session_age_s"] = float(p.get("age_s") or 0)
+        payload["bytes_sent"] = int(p.get("bytes_sent") or 0)
+        payload["bytes_recv"] = int(p.get("bytes_recv") or 0)
         # Endpoint is the peer's own advertised address on the user's own
         # network; apply_privacy-style redaction is unnecessary but we keep
         # the raw value out when empty.

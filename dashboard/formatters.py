@@ -141,6 +141,18 @@ def wifi_metric_to_row(metric: dict) -> dict[str, Any]:
     }
 
 
+def fmt_bytes(value: Any) -> str:
+    """Human-readable byte count ('—' for None/0-negative input)."""
+    if value is None or value < 0:
+        return "—"
+    size = float(value)
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if size < 1024 or unit == "TB":
+            return f"{size:.0f}{unit}" if unit == "B" else f"{size:.1f}{unit}"
+        size /= 1024
+    return f"{size:.1f}TB"
+
+
 def mesh_metric_to_row(metric: dict) -> dict[str, Any]:
     """Convert a mesh (meshlink) metric dict to a chart-ready row."""
     payload = metric.get("payload", {}) or {}
@@ -153,6 +165,8 @@ def mesh_metric_to_row(metric: dict) -> dict[str, Any]:
         "rtt_ms": payload.get("rtt_ms"),
         "rekeys": payload.get("rekeys"),
         "session_age_s": payload.get("session_age_s"),
+        "bytes_sent": payload.get("bytes_sent"),
+        "bytes_recv": payload.get("bytes_recv"),
         "endpoint": payload.get("endpoint"),
         "registry_count": payload.get("registry_count"),
         "quality_score": metric.get("quality_score"),

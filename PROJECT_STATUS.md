@@ -65,7 +65,7 @@ The following are deliberately out of v1 scope. v2 may consider them:
 
 ```
 $ pytest tests/ -v
-====================== 100 passed in 12.0s ======================
+====================== 110 passed in 12.8s ======================
 ```
 
 ## Post-v1 addendum: meshlink VPN health monitoring
@@ -81,7 +81,10 @@ Shipped after the v1.0.0 tag (see `docs/MESH_INTEGRATION.md`):
 - Dashboard "Mesh VPN" page (peer table, direct/relay counts, RTT trend).
 - `scripts/install.sh` (one-command setup incl. meshlink binaries and
   pinned-key capture) and `scripts/run-all.sh` (full local stack).
-- Tests: 91 → 100.
+- Tests: 91 → 100 → 110.
+- Runtime settings API + dashboard Settings page; optional GET auth
+  (`HOMENETIQ_REQUIRE_GET_AUTH`); ntfy/webhook notifications; mesh event
+  history (`/api/v1/mesh/events`); TUN pairing script (`tun-pair.sh`).
 
 ## Release blocker status
 
