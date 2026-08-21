@@ -125,6 +125,26 @@ def wifi_metric_to_row(metric: dict) -> dict[str, Any]:
     }
 
 
+def mesh_metric_to_row(metric: dict) -> dict[str, Any]:
+    """Convert a mesh (meshlink) metric dict to a chart-ready row."""
+    payload = metric.get("payload", {}) or {}
+    return {
+        "time": parse_iso(metric.get("collected_at")),
+        "device_id": metric.get("device_id"),
+        "peer_id": payload.get("peer_id"),
+        "established": payload.get("established"),
+        "path": payload.get("path"),
+        "rtt_ms": payload.get("rtt_ms"),
+        "rekeys": payload.get("rekeys"),
+        "session_age_s": payload.get("session_age_s"),
+        "endpoint": payload.get("endpoint"),
+        "registry_count": payload.get("registry_count"),
+        "quality_score": metric.get("quality_score"),
+        "quality": metric.get("quality"),
+        "root_cause": metric.get("root_cause"),
+    }
+
+
 def network_metric_to_row(metric: dict) -> dict[str, Any]:
     """Convert a Network metric dict to a chart-ready row."""
     payload = metric.get("payload", {}) or {}

@@ -26,6 +26,7 @@ from .formatters import (
     fmt_time_ago,
     fmt_timestamp,
     latest_per_device,
+    mesh_metric_to_row,
     metrics_to_dataframe,
     network_metric_to_row,
     quality_label,
@@ -276,6 +277,74 @@ def render_network_metrics() -> None:
         notes.append("- No notable anomaly at the moment.")
     for n in notes:
         st.markdown(n)
+
+
+def render_mesh() -> None:
+    st.header("Mesh VPN (meshlink)")
+    metrics = _safe_load_metrics()
+    if metrics is None:
+        return
+    mesh = filter_metrics_by_type(metrics, "mesh")
+    if not mesh:
+        st.info(
+            "No mesh metrics yet. Start the meshlink agent collector: "
+            "`collectors/meshlink_agent.py --config config/meshlink_agent.yaml` "
+            "(see About / Setup)."
+        )
+        return
+
+    # --- Latest state per device ---
+    latest_by_device = latest_per_device(mesh)
+    rows = [mesh_metric_to_row(m) for m in latest_by_device.values()]
+    df = pd.DataFrame(rows)
+
+    established = df["established"].apply(lambda v: v is True)
+    paths = df["path"].fillna("none")
+    cols = st.columns(4)
+    cols[0].metric("Peers Seen", len(df))
+    cols[1].metric("Established", int(established.sum()))
+    cols[2].metric("Direct Paths", int((paths == "direct").sum()))
+    cols[3].metric("Relay Fallbacks", int((paths == "relay").sum()))
+
+    st.subheader("Peer Status")
+    table = pd.DataFrame(
+        {
+            "Peer": df["peer_id"],
+            "Endpoint": df["endpoint"],
+            "Path": paths,
+            "RTT (ms)": df["rtt_ms"],
+            "Rekeys": df["rekeys"],
+            "Session Age (s)": df["session_age_s"].round(0),
+            "Score": df["quality_score"],
+            "Health": df["quality"].map(quality_label),
+        }
+    )
+    st.dataframe(table, hide_index=True, use_container_width=True)
+
+    # --- RTT trend over time ---
+    hist = metrics_to_dataframe([mesh_metric_to_row(m) for m in mesh])
+    if "rtt_ms" in hist.columns and hist["rtt_ms"].notna().any():
+        st.subheader("Tunnel RTT Over Time (ms)")
+        chart_df = hist[["time", "peer_id", "rtt_ms"]].dropna(subset=["rtt_ms"])
+        if not chart_df.empty and "peer_id" in chart_df.columns and chart_df["peer_id"].nunique() > 1:
+            pivot = chart_df.pivot_table(index="time", columns="peer_id", values="rtt_ms")
+            st.line_chart(pivot)
+        else:
+            st.line_chart(chart_df.set_index("time")["rtt_ms"])
+
+    # --- Diagnosis notes ---
+    st.subheader("Diagnosis")
+    seen_notes = False
+    for m in mesh[:5]:
+        rc = m.get("root_cause")
+        if rc and rc != "healthy":
+            st.markdown(
+                f"- `{m.get('device_id')}` → **{root_cause_label(rc)}** "
+                f"({fmt_time_ago(m.get('collected_at'))})"
+            )
+            seen_notes = True
+    if not seen_notes:
+        st.markdown("- All tunnels look healthy.")
 
 
 def render_issues() -> None:

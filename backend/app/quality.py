@@ -185,6 +185,41 @@ def classify_quality(metric_type: str, payload: dict) -> tuple[str, list[str], i
         explanations.append(f"DNS latency {dns_latency} ms high (threshold {T.dns_latency_slow} ms)")
         score -= 10
 
+    # ---------- meshlink overlay (VPN tunnel health) ----------
+    established = payload.get("established")
+    path = str(payload.get("path") or "").strip().lower()
+    mesh_rtt = _num(payload.get("rtt_ms"))
+
+    if established is False:
+        issues.append("mesh_peer_down")
+        explanations.append("Mesh peer is registered but the encrypted session is not established")
+        score -= 55
+    elif established is True:
+        if path == "none":
+            issues.append("mesh_no_path")
+            explanations.append("Session exists but no working path (direct or relay) was found")
+            score -= 35
+        elif path == "relay":
+            issues.append("mesh_relay_fallback")
+            explanations.append("Traffic is going through the relay; direct path was not possible")
+            score -= 25
+
+    if mesh_rtt is not None:
+        if mesh_rtt > T.mesh_rtt_very_high:
+            issues.append("high_mesh_latency")
+            explanations.append(f"Tunnel RTT {mesh_rtt} ms very high (threshold {T.mesh_rtt_very_high} ms)")
+            score -= 25
+        elif mesh_rtt > T.mesh_rtt_high:
+            issues.append("high_mesh_latency")
+            explanations.append(f"Tunnel RTT {mesh_rtt} ms high (threshold {T.mesh_rtt_high} ms)")
+            score -= 12
+
+    registry_count = _num(payload.get("registry_count"))
+    if registry_count == 0:
+        issues.append("mesh_registry_empty")
+        explanations.append("Coordinator registry reports no peers; registration may have failed")
+        score -= 10
+
     # ---------- Clamp score and map to category ----------
     # Cumulative penalty when multiple "severe" issues accumulate; prevents
     # borderline cases from being classified as "warning".
@@ -192,6 +227,7 @@ def classify_quality(metric_type: str, payload: dict) -> tuple[str, list[str], i
         "weak_signal", "low_snr", "low_tx_rate", "low_rx_rate",
         "packet_loss", "high_internet_latency", "high_gateway_latency",
         "high_ap_latency", "ap_unreachable", "internet_unreachable",
+        "mesh_peer_down",
     }
     severe_count = sum(1 for i in issues if i in severe_codes)
     if severe_count >= 3:

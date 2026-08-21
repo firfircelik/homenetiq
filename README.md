@@ -250,6 +250,7 @@ the user's own device/network are **not** collected or sent.
 - Agents: `docs/AGENTS.md`
 - Metric payload contract: `docs/METRIC_CONTRACT.md`
 - Dashboard: `docs/DASHBOARD.md`
+- Mesh VPN monitoring (meshlink): `docs/MESH_INTEGRATION.md`
 - Pi setup: `docs/SETUP_RASPBERRY_PI.md`
 - Kali setup: `docs/SETUP_KALI_AGENT.md`
 - macOS setup: `docs/SETUP_MACOS_AGENT.md`

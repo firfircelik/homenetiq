@@ -16,6 +16,23 @@ def classify_root_cause(metric_type: str, payload: dict, issues: list[str]) -> s
 
     issue_set = set(issues)
 
+    # meshlink overlay metrics have their own vocabulary: the interesting
+    # question is where the tunnel path broke, not where Wi-Fi degraded.
+    if metric_type == "mesh":
+        if "mesh_peer_down" in issue_set:
+            return "mesh_peer_offline"
+        if "mesh_no_path" in issue_set:
+            return "nat_traversal_failed"
+        if "mesh_relay_fallback" in issue_set:
+            return "nat_traversal_limited"
+        if "high_mesh_latency" in issue_set:
+            return "mesh_path_degraded"
+        if "mesh_registry_empty" in issue_set:
+            return "coordinator_registration_issue"
+        if not issues:
+            return "healthy"
+        return "unknown_issue"
+
     # A single-device metric cannot be benchmarked, so it relies only on
     # that device's own observations. If both AP and internet are
     # unreachable, the issue may be on the probe or backend side.

@@ -16,6 +16,7 @@ PAGES = [
     ("Devices", "🖥️", pages.render_devices),
     ("Wi-Fi Metrics", "📶", pages.render_wifi_metrics),
     ("Network Metrics", "🌐", pages.render_network_metrics),
+    ("Mesh VPN", "🔐", pages.render_mesh),
     ("Issues & Root Cause", "🧩", pages.render_issues),
     ("Recommendations", "💡", pages.render_recommendations),
     ("Raw Metrics", "🔍", pages.render_raw_metrics),

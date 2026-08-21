@@ -64,6 +64,28 @@ _ISSUE_TIPS: dict[str, str] = {
         "No metrics received for a long time. Verify the probe or backend "
         "service is running."
     ),
+    "mesh_peer_down": (
+        "The mesh peer is registered but the encrypted tunnel is down. "
+        "Check that the peer's meshlink agent is running and both sides "
+        "can reach the coordinator."
+    ),
+    "mesh_no_path": (
+        "No direct or relay path could be established. Check UDP connectivity "
+        "and that the relay address is reachable from both peers."
+    ),
+    "mesh_relay_fallback": (
+        "Traffic is flowing through the relay because no direct path was "
+        "possible. This still works but adds latency; check NAT/firewall "
+        "settings if you want the faster direct path."
+    ),
+    "high_mesh_latency": (
+        "Tunnel round-trip time is high. If the path is relay, this is "
+        "expected; otherwise check the load on both endpoints."
+    ),
+    "mesh_registry_empty": (
+        "The coordinator registry is empty. Verify the agent registered "
+        "successfully and the coordinator is running."
+    ),
 }
 
 
@@ -99,6 +121,28 @@ _ROOT_CAUSE_TIPS: dict[str, str] = {
     "probe_or_backend_issue": (
         "The issue may be on the probe or backend side. Verify the "
         "homenetiq-backend and probe services are running."
+    ),
+    "mesh_peer_offline": (
+        "The remote mesh peer is not answering. Check that its meshlink "
+        "agent is running and both sides can reach the coordinator."
+    ),
+    "nat_traversal_failed": (
+        "Neither a direct nor a relay path could be established between "
+        "the peers. Verify the relay is reachable and UDP is not blocked."
+    ),
+    "nat_traversal_limited": (
+        "The peers are connected through the relay because direct hole "
+        "punching failed (typical for symmetric NATs). The tunnel works, "
+        "but with extra latency."
+    ),
+    "mesh_path_degraded": (
+        "The tunnel path has high latency. Compare direct vs relay in the "
+        "mesh status; relay paths are naturally slower."
+    ),
+    "coordinator_registration_issue": (
+        "No peers are visible in the coordinator registry. Check that the "
+        "agents registered successfully and share the coordinator's pinned "
+        "public key."
     ),
     "unknown_issue": (
         "Could not classify the issue. As more metrics are collected, a "

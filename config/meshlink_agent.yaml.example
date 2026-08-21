@@ -1,0 +1,35 @@
+device:
+  id: "mac-mini-mesh"
+  name: "Mac mini meshlink tunnel"
+  type: "network_probe"
+  os: "macos"
+  agent_version: "1.0.0"
+
+backend:
+  url: "http://192.168.1.50:8080/api/v1/metrics"
+  token: "change-me-local-token"
+
+collector:
+  interval_seconds: 30
+  retry_delay_seconds: 10
+  # meshlink status waits up to ~5 s for the registry reply; give it headroom.
+  timeout_seconds: 20
+
+privacy:
+  mode: "redact"
+  salt: ""
+
+# meshlink (https://github.com/firfircelik/network-project) status snapshot.
+# The agent only READS this snapshot; it never configures the mesh.
+meshlink:
+  bin: "/usr/local/bin/meshlink-agent"  # install.sh bu isimle kurar
+  name: "b"                             # bu cihazin meshlink kimligi
+  keyfile: "/etc/meshlink/key.b"
+  data: "0.0.0.0:19502"
+  coordinator: "192.168.1.113:19200"
+  coord_pubkey: "<coordinator-control-public-key-hex>"
+  stun: "192.168.1.113:19201"
+  relay: "192.168.1.113:19205"
+  # (opsiyonel) Ölçmeden önce bu peer'a 1 ping at: tünel kurulur, status
+  # gerçek path/RTT gösterir. Boşsa sadece snapshot alınır.
+  probe_peer: "a"

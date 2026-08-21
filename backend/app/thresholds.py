@@ -40,6 +40,12 @@ class Thresholds:
     # "unreachable" threshold: ping failure means packet_loss is 100
     packet_loss_unreachable: float = 100.0
 
+    # --- meshlink overlay (VPN tüneli) ---
+    # RTT is end-to-end through the encrypted tunnel; LAN-direct paths are
+    # typically <5 ms, relay paths and cross-WAN paths are higher.
+    mesh_rtt_high: float = 150.0
+    mesh_rtt_very_high: float = 400.0
+
     # --- Skor kategorileri ---
     score_good_min: int = 80
     score_warning_min: int = 50
