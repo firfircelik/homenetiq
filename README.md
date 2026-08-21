@@ -2,7 +2,7 @@
 
 ![Status: Release Candidate](https://img.shields.io/badge/status-release--candidate-blue)
 ![Python: 3.11 | 3.12](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue)
-![Tests: 91/91](https://img.shields.io/badge/tests-91%2F91-brightgreen)
+![Tests: 100/100](https://img.shields.io/badge/tests-100%2F100-brightgreen)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
 HomeNetIQ is a self-hosted network intelligence platform that measures the
@@ -10,6 +10,11 @@ quality of your home network and Wi-Fi connection. It only collects
 telemetry from your own devices on your own network — it is **not a
 Wi-Fi hacking tool, not a neighbor-network scanner, and not an attack
 tool**.
+
+It can also monitor the health of a [meshlink](https://github.com/firfircelik/network-project)
+encrypted P2P mesh VPN — tunnel path (direct/relay), RTT, rekeys and peer
+availability become part of the same quality score and dashboard. See
+[docs/MESH_INTEGRATION.md](docs/MESH_INTEGRATION.md).
 
 > 🇹🇷 Turkish documentation: [README.tr.md](README.tr.md)
 
@@ -119,6 +124,7 @@ The dashboard opens at <http://localhost:8501>.
 | Devices | Device list with status and latest quality |
 | Wi-Fi Metrics | RSSI/SNR/Tx-rate time series, band distribution |
 | Network Metrics | Gateway/AP/internet latency, packet loss, jitter, short notes |
+| Mesh VPN | meshlink tunnel health: peer table, direct/relay paths, RTT trend, rekeys |
 | Issues & Root Cause | Recent issues and root-cause distribution |
 | Recommendations | Deduped, prioritised recommendation list |
 | Raw Metrics | Raw JSON view (debug) |
@@ -138,10 +144,37 @@ streamlit run dashboard/streamlit_app.py
 
 Details: `docs/DASHBOARD.md`.
 
+### 6. Optional: Mesh VPN monitoring (meshlink)
+
+If you run a [meshlink](https://github.com/firfircelik/network-project)
+encrypted P2P mesh, HomeNetIQ can score its health too — tunnel path
+(direct/relay), RTT, rekeys and peer availability on the same dashboard.
+
+One-command setup (builds/installs meshlink binaries, generates the config,
+captures the coordinator's pinned public key, writes systemd units):
+
+```bash
+./scripts/install.sh
+sudo systemctl enable --now homenetiq-mesh-agent   # Linux/systemd
+```
+
+Manual alternative:
+
+```bash
+cp config/meshlink_agent.yaml.example config/meshlink_agent.yaml
+# Edit the `meshlink:` section: bin, name, keyfile, coordinator,
+# coord_pubkey (from the coordinator log) and optionally probe_peer.
+
+make mesh-once    # one tick; drop --once for the continuous loop
+```
+
+Details: `docs/MESH_INTEGRATION.md`.
+
 ## systemd services
 
-There are 3 unit files in `systemd/`. **They must be edited for your
+There are 4 unit files in `systemd/`. **They must be edited for your
 device before being installed: hard-coded user/path values are placeholders.**
+(`scripts/install.sh` fills them in automatically.)
 
 Before copying a unit:
 
@@ -165,12 +198,16 @@ sudo cp systemd/homenetiq-backend.service   /etc/systemd/system/
 sudo cp systemd/homenetiq-pi-probe.service  /etc/systemd/system/
 # On the Kali device:
 sudo cp systemd/homenetiq-kali-agent.service /etc/systemd/system/
+# On the meshlink host (optional, VPN health monitoring):
+sudo cp systemd/homenetiq-mesh-agent.service /etc/systemd/system/
 
 sudo systemctl daemon-reload
 sudo systemctl enable --now homenetiq-backend
 sudo systemctl enable --now homenetiq-pi-probe
 # On the Kali device:
 sudo systemctl enable --now homenetiq-kali-agent
+# On the meshlink host (optional):
+sudo systemctl enable --now homenetiq-mesh-agent
 sudo systemctl status homenetiq-backend --no-pager
 ```
 
@@ -179,7 +216,7 @@ sudo systemctl status homenetiq-backend --no-pager
 ```bash
 # Set up the venv and run the suite
 make install
-make test                    # runs all 91 tests
+make test                    # runs all 100 tests
 ```
 
 Or manually:
@@ -195,7 +232,7 @@ cd ..
 pytest tests/ -v
 ```
 
-Expected: `91 passed`.
+Expected: `100 passed`.
 
 Other Makefile targets:
 
@@ -207,6 +244,7 @@ make run-dashboard      # streamlit
 make kali-once          # Kali agent: one tick
 make macos-once         # macOS agent: one tick
 make pi-probe-once      # Pi probe: one tick
+make mesh-once          # meshlink VPN health agent: one tick
 make clean              # __pycache__ + .pytest_cache
 ```
 

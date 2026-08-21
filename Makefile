@@ -18,16 +18,18 @@ DASH    = dashboard/streamlit_app.py
 KALI    = collectors/kali_wifi_agent.py
 MACOS   = collectors/macos_wifi_agent.py
 PI      = probes/pi_network_probe.py
+MESH    = collectors/meshlink_agent.py
 
 CONFIG_KALI   ?= config/kali_agent.yaml
 CONFIG_MACOS  ?= config/macos_agent.yaml
 CONFIG_PI     ?= config/pi_probe.yaml
+CONFIG_MESH   ?= config/meshlink_agent.yaml
 
 HOST ?= 0.0.0.0
 PORT ?= 8080
 
 .PHONY: help install test test-fast run-backend run-dashboard \
-        kali-once macos-once pi-probe-once clean lint
+        kali-once macos-once pi-probe-once mesh-once clean lint
 
 help:
 	@echo "HomeNetIQ v1 — Makefile"
@@ -40,9 +42,10 @@ help:
 	@echo "  make kali-once       Kali Wi-Fi agent'ı bir tick çalıştır"
 	@echo "  make macos-once      macOS Wi-Fi agent'ı bir tick çalıştır"
 	@echo "  make pi-probe-once   Pi network probe'u bir tick çalıştır"
+	@echo "  make mesh-once       meshlink VPN sağlık agent'ını bir tick çalıştır"
 	@echo "  make clean           __pycache__ + .pytest_cache + .venv sil"
 	@echo ""
-	@echo "Config dosyaları CONFIG_KALI / CONFIG_MACOS / CONFIG_PI ile override edilebilir."
+	@echo "Config dosyaları CONFIG_KALI / CONFIG_MACOS / CONFIG_PI / CONFIG_MESH ile override edilebilir."
 
 install:
 	test -d $(VENV) || $(PY) -m venv $(VENV)
@@ -78,6 +81,10 @@ macos-once:
 pi-probe-once:
 	@test -f $(CONFIG_PI) || { echo "Config yok: $(CONFIG_PI) — 'cp config/pi_probe.yaml.example $(CONFIG_PI)'"; exit 1; }
 	$(PY) $(PI) --config $(CONFIG_PI) --once
+
+mesh-once:
+	@test -f $(CONFIG_MESH) || { echo "Config yok: $(CONFIG_MESH) — 'cp config/meshlink_agent.yaml.example $(CONFIG_MESH)' veya './scripts/install.sh'"; exit 1; }
+	$(PY) $(MESH) --config $(CONFIG_MESH) --once
 
 clean:
 	rm -rf .pytest_cache
