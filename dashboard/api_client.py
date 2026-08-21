@@ -71,5 +71,9 @@ def get_latest_metrics(limit: int = 200) -> list[dict[str, Any]]:
     return _request("/api/v1/metrics/latest", params={"limit": limit})
 
 
+def get_mesh_events(limit: int = 20) -> list[dict[str, Any]]:
+    return _request("/api/v1/mesh/events", params={"limit": limit})
+
+
 def health() -> dict[str, Any]:
     return _request("/health")

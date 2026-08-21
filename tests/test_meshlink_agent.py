@@ -8,6 +8,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from backend.app.quality import classify_quality
 from backend.app.root_cause import classify_root_cause
 from collectors.meshlink_agent import payloads_from_snapshot, parse_status_json
+from dashboard.formatters import latest_per_peer
+from backend.app.notifier import detect_transitions
 
 
 SAMPLE_SNAPSHOT = {
@@ -113,3 +115,48 @@ def test_root_cause_mesh_mapping():
     assert classify_root_cause("mesh", {}, ["high_mesh_latency"]) == "mesh_path_degraded"
     assert classify_root_cause("mesh", {}, ["mesh_registry_empty"]) == "coordinator_registration_issue"
     assert classify_root_cause("mesh", {}, []) == "healthy"
+
+
+# --- Multi-peer dashboard grouping ---
+
+def _metric(device, peer, est, ts):
+    return {
+        "device_id": device,
+        "collected_at": ts,
+        "payload": {"peer_id": peer, "established": est, "path": "direct"},
+    }
+
+
+def test_latest_per_peer_keeps_every_peer_of_a_device():
+    metrics = [
+        _metric("dev1", "a", True, "2026-08-21T10:00:00+00:00"),
+        _metric("dev1", "b", False, "2026-08-21T10:01:00+00:00"),
+        _metric("dev1", "a", True, "2026-08-21T10:02:00+00:00"),  # newer for a
+    ]
+    pairs = latest_per_peer(metrics)
+    assert set(pairs.keys()) == {("dev1", "a"), ("dev1", "b")}
+    # newest sample per peer wins
+    assert pairs[("dev1", "a")]["collected_at"] == "2026-08-21T10:02:00+00:00"
+
+
+# --- State-change transitions (notifications / events) ---
+
+def test_detect_transitions_up_down_and_path():
+    prev = {"peer_id": "a", "established": True, "path": "direct"}
+    new = {"peer_id": "a", "established": False, "path": "none"}
+    kinds = [k for k, _ in detect_transitions(prev, new)]
+    assert kinds == ["peer_down"]
+
+    up = detect_transitions(new, prev)
+    assert [k for k, _ in up] == ["peer_up"]
+
+    switch = detect_transitions(
+        {"peer_id": "a", "established": True, "path": "direct"},
+        {"peer_id": "a", "established": True, "path": "relay"},
+    )
+    assert switch == [("path_change", "peer 'a': direct → relay")]
+
+
+def test_detect_transitions_first_report_is_silent():
+    first = detect_transitions(None, {"peer_id": "a", "established": True, "path": "direct"})
+    assert first == []

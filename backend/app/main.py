@@ -5,13 +5,16 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from .database import (
     init_db,
     insert_metric,
+    insert_mesh_event,
     latest_metrics,
     latest_metrics_for_device,
     list_devices,
+    list_mesh_events,
     summary_last_metrics,
     upsert_device,
 )
 from .models import MetricIn, StoreResponse
+from .notifier import detect_transitions, send_notification
 from .quality import classify_quality
 from .recommendations import recommend
 from .root_cause import classify_root_cause
@@ -80,6 +83,21 @@ def ingest_metric(metric: MetricIn):
     root_cause = classify_root_cause(metric.metric_type, metric.payload, issues)
     recommendations = recommend(issues, root_cause)
 
+    # --- mesh state-change detection (BEFORE inserting the new sample) ---
+    mesh_events: list[tuple[str, str]] = []
+    if metric.metric_type == "mesh":
+        peer_id = metric.payload.get("peer_id")
+        if peer_id:
+            prev_payload = None
+            for row in latest_metrics_for_device(metric.device_id, limit=10):
+                row_peer = (row.get("payload") or {}).get("peer_id")
+                if row_peer == peer_id:
+                    prev_payload = row.get("payload")
+                    break
+        else:
+            peer_id = ""
+        mesh_events = detect_transitions(prev_payload, metric.payload)
+
     upsert_device(metric.device_id, metric.device_name, metric.device_type, metric.os)
     metric_id = insert_metric(
         device_id=metric.device_id,
@@ -94,6 +112,20 @@ def ingest_metric(metric: MetricIn):
         explanations=explanations,
         recommendations=recommendations,
     )
+
+    # --- record + notify mesh state changes (after successful insert) ---
+    if metric.metric_type == "mesh":
+        for kind, detail in mesh_events:
+            insert_mesh_event(
+                device_id=metric.device_id,
+                peer_id=str(metric.payload.get("peer_id") or ""),
+                kind=kind,
+                detail=detail,
+            )
+            send_notification(
+                title=f"HomeNetIQ mesh: {kind}",
+                body=f"{detail}\n(device: {metric.device_id})",
+            )
 
     return StoreResponse(
         status="stored",
@@ -111,6 +143,12 @@ def ingest_metric(metric: MetricIn):
 @app.get("/api/v1/metrics/latest")
 def get_latest_metrics(limit: int = 50):
     return latest_metrics(limit=limit)
+
+
+@app.get("/api/v1/mesh/events")
+def get_mesh_events(limit: int = 50):
+    """Recent mesh state-change events (peer up/down, path switches)."""
+    return list_mesh_events(limit=limit)
 
 
 @app.get("/api/v1/devices")

@@ -57,6 +57,18 @@ def init_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_metrics_quality_time
             ON metrics(quality, collected_at DESC);
+
+            CREATE TABLE IF NOT EXISTS mesh_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                device_id TEXT NOT NULL,
+                peer_id TEXT NOT NULL,
+                kind TEXT NOT NULL,
+                detail TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_mesh_events_time
+            ON mesh_events(created_at DESC);
             """
         )
         # Geriye uyumlu migration: yeni kolonlar yoksa ekle
@@ -230,3 +242,38 @@ def _metric_row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
     if "recommendations_json" in keys and row["recommendations_json"]:
         out["recommendations"] = json.loads(row["recommendations_json"])
     return out
+
+
+def insert_mesh_event(*, device_id: str, peer_id: str, kind: str,
+                      detail: str, created_at: datetime | None = None) -> int:
+    """Store a mesh state-change event (peer up/down, path switch, ...)."""
+    ts = (created_at or datetime.now(timezone.utc)).isoformat()
+    with get_conn() as conn:
+        cur = conn.execute(
+            """
+            INSERT INTO mesh_events(device_id, peer_id, kind, detail, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (device_id, peer_id, kind, detail, ts),
+        )
+        return int(cur.lastrowid)
+
+
+def list_mesh_events(limit: int = 50) -> list[dict[str, Any]]:
+    """Newest mesh events first."""
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM mesh_events ORDER BY created_at DESC, id DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return [
+            {
+                "id": r["id"],
+                "device_id": r["device_id"],
+                "peer_id": r["peer_id"],
+                "kind": r["kind"],
+                "detail": r["detail"],
+                "created_at": r["created_at"],
+            }
+            for r in rows
+        ]

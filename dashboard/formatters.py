@@ -100,6 +100,22 @@ def latest_per_device(metrics: list[dict]) -> dict[str, dict]:
     return out
 
 
+def latest_per_peer(mesh_metrics: list[dict]) -> dict[tuple, dict]:
+    """Return the newest mesh metric per (device_id, peer_id) pair.
+
+    Mesh agents emit ONE metric PER PEER, so grouping by device alone would
+    hide all but the most recently reported peer of a device.
+    """
+    out: dict[tuple, dict] = {}
+    for m in mesh_metrics:
+        payload = m.get("payload") or {}
+        key = (m.get("device_id", ""), payload.get("peer_id", ""))
+        cur = out.get(key)
+        if cur is None or (m.get("collected_at") or "") > (cur.get("collected_at") or ""):
+            out[key] = m
+    return out
+
+
 # ---------- Flatten / DataFrame ----------
 
 def wifi_metric_to_row(metric: dict) -> dict[str, Any]:

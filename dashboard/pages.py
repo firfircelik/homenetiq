@@ -16,6 +16,7 @@ from .api_client import (
     get_backend_url,
     get_devices,
     get_latest_metrics,
+    get_mesh_events,
     get_summary,
 )
 from .formatters import (
@@ -26,6 +27,7 @@ from .formatters import (
     fmt_time_ago,
     fmt_timestamp,
     latest_per_device,
+    latest_per_peer,
     mesh_metric_to_row,
     metrics_to_dataframe,
     network_metric_to_row,
@@ -293,9 +295,10 @@ def render_mesh() -> None:
         )
         return
 
-    # --- Latest state per device ---
-    latest_by_device = latest_per_device(mesh)
-    rows = [mesh_metric_to_row(m) for m in latest_by_device.values()]
+    # --- Latest state per (device, peer): a device may report MANY peers,
+    # each as its own metric — grouping by device alone would hide peers.
+    latest_by_pair = latest_per_peer(mesh)
+    rows = [mesh_metric_to_row(m) for m in latest_by_pair.values()]
     df = pd.DataFrame(rows)
 
     established = df["established"].apply(lambda v: v is True)
@@ -345,6 +348,23 @@ def render_mesh() -> None:
             seen_notes = True
     if not seen_notes:
         st.markdown("- All tunnels look healthy.")
+
+    # --- Recent state-change events ---
+    st.subheader("Recent Events")
+    try:
+        events = get_mesh_events(limit=10)
+    except ApiUnavailable as exc:
+        st.warning(str(exc))
+        events = []
+    if not events:
+        st.caption("No mesh state-change events recorded yet.")
+    event_icon = {"peer_down": "🔴", "peer_up": "🟢", "path_change": "🔀"}
+    for ev in events:
+        icon = event_icon.get(ev.get("kind"), "•")
+        st.markdown(
+            f"- {icon} `{ev.get('peer_id')}` — {ev.get('detail')} "
+            f"({fmt_time_ago(ev.get('created_at'))})"
+        )
 
 
 def render_issues() -> None:

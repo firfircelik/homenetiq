@@ -19,6 +19,9 @@ class Settings:
     # `scripts/join.sh` can bootstrap without copying keys by hand.
     # A public key is an identity, not a secret; see docs/MESH_INTEGRATION.md.
     mesh_pubkey: str = os.getenv("HOMENETIQ_MESH_PUBKEY", "")
+    # Optional webhook / ntfy URL for mesh state-change notifications
+    # (e.g. https://ntfy.sh/my-topic). Empty disables notifications.
+    notify_url: str = os.getenv("HOMENETIQ_NOTIFY_URL", "")
 
 
 settings = Settings()
