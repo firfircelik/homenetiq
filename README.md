@@ -169,6 +169,17 @@ cp config/meshlink_agent.yaml.example config/meshlink_agent.yaml
 make mesh-once    # one tick; drop --once for the continuous loop
 ```
 
+#### Joining from another device (one command)
+
+On the second device (same LAN), no key copying needed:
+
+```bash
+./scripts/join.sh 192.168.1.113 linux   # <host-ip> [name]
+```
+
+It fetches the pinned coordinator public key from the host's backend
+(`GET /api/v1/mesh/pubkey`) and starts the mesh agent automatically.
+
 Details: `docs/MESH_INTEGRATION.md`.
 
 #### One-command demo stack (no Docker)

@@ -177,6 +177,7 @@ sleep 2
 
 log "backend başlatılıyor ..."
 export HOMENETIQ_API_TOKEN="$TOKEN"
+export HOMENETIQ_MESH_PUBKEY="$PUB"   # LAN'daki client'lar join.sh ile bunu çeker
 launch backend ".venv/bin/python" -m uvicorn backend.app.main:app --host "$BIND" --port 8080
 wait_for "backend sağlık kontrolü" 30 curl -sf "http://$BIND:8080/health"
 

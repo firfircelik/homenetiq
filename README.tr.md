@@ -91,6 +91,17 @@ sudo systemctl enable --now homenetiq-mesh-agent
 ./scripts/run-all.sh          # Dashboard: http://localhost:8501
 ```
 
+#### Diğer cihazdan katılma (tek komut)
+
+İkinci cihazda (aynı LAN) anahtar kopyalamaya gerek yok:
+
+```bash
+./scripts/join.sh 192.168.1.113 linux   # <host-ip> [isim]
+```
+
+Pinli coordinator public key'ini host backend'inden kendisi çeker ve
+mesh agent'ı otomatik başlatır.
+
 Detay: `docs/MESH_INTEGRATION.md`.
 
 ## systemd

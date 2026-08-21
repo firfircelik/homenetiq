@@ -15,6 +15,10 @@ class Settings:
     require_auth: bool = os.getenv("HOMENETIQ_REQUIRE_AUTH", "true").lower() == "true"
     stale_after_seconds: int = int(os.getenv("HOMENETIQ_STALE_AFTER_SECONDS", "120"))
     offline_after_seconds: int = int(os.getenv("HOMENETIQ_OFFLINE_AFTER_SECONDS", "600"))
+    # meshlink enrollment: coordinator public key served to LAN clients so
+    # `scripts/join.sh` can bootstrap without copying keys by hand.
+    # A public key is an identity, not a secret; see docs/MESH_INTEGRATION.md.
+    mesh_pubkey: str = os.getenv("HOMENETIQ_MESH_PUBKEY", "")
 
 
 settings = Settings()

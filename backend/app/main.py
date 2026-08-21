@@ -58,6 +58,20 @@ def health():
     return {"status": "ok", "service": "homenetiq-backend"}
 
 
+@app.get("/api/v1/mesh/pubkey")
+def mesh_pubkey():
+    """Serve the local meshlink coordinator's public key for LAN enrollment.
+
+    Used by `scripts/join.sh` on client devices so they don't have to copy
+    the key by hand. A public key is a *pinned identity*, not a secret —
+    but note that serving it over plain HTTP means enrollment trusts the
+    LAN at first use (TOFU). See docs/MESH_INTEGRATION.md.
+    """
+    if not settings.mesh_pubkey:
+        raise HTTPException(status_code=404, detail="mesh pubkey not configured")
+    return {"coord_pubkey": settings.mesh_pubkey}
+
+
 @app.post("/api/v1/metrics", response_model=StoreResponse, dependencies=[Depends(require_token)])
 def ingest_metric(metric: MetricIn):
     collected_at = metric.normalized_collected_at()

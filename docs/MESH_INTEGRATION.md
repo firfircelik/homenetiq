@@ -56,6 +56,20 @@ Key config fields (`meshlink:` section):
 > **persistent** keyfile `data/coordinator.key`. Run your real coordinator
 > with that same file, otherwise agents correctly reject it (key pinning).
 
+## Joining a client device (one command)
+
+On the second device:
+
+```sh
+./scripts/join.sh <HOST_IP> [name]
+```
+
+The script pulls the pinned coordinator public key from the host backend
+(`GET /api/v1/mesh/pubkey`, served via `HOMENETIQ_MESH_PUBKEY` which
+`run-all.sh` sets automatically) and starts the agent. Note: fetching the
+key over plain HTTP is trust-on-first-use on the LAN — fine for home use;
+for hostile networks copy the key manually instead.
+
 ## Notes
 
 - `rtt_ms` is `null` until a probe succeeds; use `probe_peer` for immediate
