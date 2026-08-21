@@ -1,5 +1,6 @@
 # HomeNetIQ v1.0.0
 
+[![CI](https://github.com/firfircelik/homenetiq/actions/workflows/ci.yml/badge.svg)](https://github.com/firfircelik/homenetiq/actions/workflows/ci.yml)
 ![Status: Release Candidate](https://img.shields.io/badge/status-release--candidate-blue)
 ![Python: 3.11 | 3.12](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue)
 ![Tests: 100/100](https://img.shields.io/badge/tests-100%2F100-brightgreen)
