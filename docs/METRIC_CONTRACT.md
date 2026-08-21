@@ -12,7 +12,7 @@ Body of `POST /api/v1/metrics` (JSON):
 |---|---|---|---|
 | `device_id` | string (≥2) | yes | Persistent device identifier (e.g. `"kali-macbook-air"`) |
 | `device_type` | string | yes | `"wifi_probe"`, `"network_probe"`, `"browser_probe"` |
-| `metric_type` | string | yes | `"wifi"`, `"network"`, `"dns"`, `"channel_scan"` |
+| `metric_type` | string | yes | `"wifi"`, `"network"`, `"dns"`, `"channel_scan"`, `"mesh"` |
 | `payload` | object | yes | Metric-specific fields (below) |
 | `device_name` | string | no | Display name |
 | `os` | string | no | `"linux"`, `"kali-linux"`, `"macos"`, `"raspberry-pi-os"` |
@@ -60,7 +60,33 @@ When `metric_type == "network"`:
 | `packet_loss_percent` | float | 0-100 (100 = unreachable) |
 | `jitter_ms` | float? | ping stddev/mdev |
 
-## 4. Alias support (backwards compatibility)
+## 4. Mesh payload (meshlink VPN health)
+
+When `metric_type == "mesh"` — one metric **per mesh peer**, produced by
+`collectors/meshlink_agent.py` from a `meshlink agent status --json`
+snapshot:
+
+| Field | Type | Description |
+|---|---|---|
+| `peer_id` | string | Remote peer's mesh identity (`""` when no peers are known yet) |
+| `established` | bool \| null | Encrypted session up? `null` = no peers known yet |
+| `path` | string | `"direct"`, `"relay"` or `"none"` |
+| `rtt_ms` | float \| null | Tunnel round-trip; `null` until a probe succeeds |
+| `rekeys` | int | Key rotations on the current session |
+| `session_age_s` | float | Seconds since the session was established (0 = none) |
+| `endpoint` | string? | Peer's advertised direct endpoint |
+| `local_name` | string | This device's mesh identity |
+| `registry_count` | int | Peers visible in the coordinator registry |
+| `coordinator_up_s` | int? | Coordinator uptime in seconds |
+| `registry_error` | string? | Present when the registry query failed |
+
+Quality rules for this type: unestablished peer, relay fallback, missing
+path, high tunnel RTT and an empty registry each lower the score; see
+`backend/app/quality.py`. Root-cause labels:
+`mesh_peer_offline`, `nat_traversal_limited`, `nat_traversal_failed`,
+`mesh_path_degraded`, `coordinator_registration_issue`.
+
+## 5. Alias support (backwards compatibility)
 
 The backend accepts these aliases; new payloads should use the
 **canonical fields**:
@@ -73,7 +99,7 @@ The backend accepts these aliases; new payloads should use the
 Legacy short forms for `band` (`"2GHz"`, `"2G"`, `"2.4"`) are accepted
 by the backend; agents should use the canonical `"2.4GHz"` form.
 
-## 5. agent_version
+## 6. agent_version
 
 - All agents add `agent_version` to the payload.
 - Current version: `"1.0.0"` (defined in `agents/version.py`).
@@ -82,7 +108,7 @@ by the backend; agents should use the canonical `"2.4GHz"` form.
 - If a future version changes a field's name or meaning, a new
   `metric_type` should be introduced or this document updated.
 
-## 6. Example Wi-Fi payload
+## 7. Example Wi-Fi payload
 
 ```json
 {
@@ -121,7 +147,7 @@ by the backend; agents should use the canonical `"2.4GHz"` form.
 }
 ```
 
-## 7. Example Network payload
+## 8. Example Network payload
 
 ```json
 {

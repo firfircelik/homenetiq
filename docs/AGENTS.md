@@ -19,6 +19,7 @@ HomeNetIQ collects telemetry from the **user's own devices** on the
 | Kali/Linux Wi-Fi agent | `collectors/kali_wifi_agent.py` | Linux (Kali, Raspbian, etc.) | `iw`-based Wi-Fi telemetry |
 | macOS Wi-Fi agent | `collectors/macos_wifi_agent.py` | macOS | `system_profiler`-based Wi-Fi telemetry |
 | Pi/Linux Network Probe | `probes/pi_network_probe.py` | Linux (Pi, etc.) | Network latency and DNS |
+| meshlink VPN Health Agent | `collectors/meshlink_agent.py` | Any (macOS, Linux) | Encrypted mesh tunnel health — path (direct/relay), RTT, rekeys; see [`docs/MESH_INTEGRATION.md`](MESH_INTEGRATION.md) |
 
 ## Shared infrastructure
 
@@ -81,12 +82,17 @@ python3 collectors/macos_wifi_agent.py --config config/macos_agent.yaml --once
 
 # Pi probe
 python3 probes/pi_network_probe.py --config config/pi_probe.yaml --once
+
+# meshlink VPN health
+python3 collectors/meshlink_agent.py --config config/meshlink_agent.yaml --once
+# (veya: make mesh-once)
 ```
 
 ## Tests
 
 - `tests/test_kali_parser.py` — Kali parser + macOS parser + Pi payload + privacy
 - `tests/test_agent_utils.py` — HTTP, retry/backoff, config loader
+- `tests/test_meshlink_agent.py` — meshlink snapshot parsing, payload mapping, mesh quality/root-cause rules
 
 Run with `pytest tests/ -v`.
 

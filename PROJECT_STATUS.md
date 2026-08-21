@@ -10,9 +10,10 @@ system that runs on the local network. v1 scope:
 - Metric ingest + REST API
 - Rule-based quality scoring (0-100) + issue + root cause
 - Human-readable recommendations
-- 3 agents: Kali/Linux Wi-Fi, macOS Wi-Fi, Pi/Linux network probe
+- 4 agents: Kali/Linux Wi-Fi, macOS Wi-Fi, Pi/Linux network probe,
+  meshlink VPN health (optional)
 - Multi-page Streamlit dashboard
-- systemd-based service management
+- systemd-based service management + one-command installer/run scripts
 
 ## What is NOT in v1 (deliberate)
 
@@ -32,9 +33,9 @@ system that runs on the local network. v1 scope:
 - ✅ Quality engine (4-tuple: quality, score, issues, explanations)
 - ✅ Root cause classifier (10+ labels)
 - ✅ Recommendation engine (English; Turkish in docs)
-- ✅ 3 agents (Kali, macOS, Pi) — canonical payload + privacy
-- ✅ Dashboard (8 pages, empty-data safe)
-- ✅ 91 tests (100% green)
+- ✅ 4 agents (Kali, macOS, Pi, meshlink health) — canonical payload + privacy
+- ✅ Dashboard (9 pages, empty-data safe)
+- ✅ 100 tests (100% green)
 - ✅ systemd units + GitHub Actions CI
 - ✅ docs/ (ARCHITECTURE, QUALITY_ENGINE, AGENTS, METRIC_CONTRACT, DASHBOARD, SETUP_*, TROUBLESHOOTING) + docs/tr/ for Turkish
 - ✅ Makefile (test, run-backend, run-dashboard, kali-once, pi-probe-once)
@@ -64,8 +65,23 @@ The following are deliberately out of v1 scope. v2 may consider them:
 
 ```
 $ pytest tests/ -v
-====================== 91 passed, 1757 warnings in 7.21s ======================
+====================== 100 passed in 12.0s ======================
 ```
+
+## Post-v1 addendum: meshlink VPN health monitoring
+
+Shipped after the v1.0.0 tag (see `docs/MESH_INTEGRATION.md`):
+
+- New optional agent `collectors/meshlink_agent.py` — reads a
+  [meshlink](https://github.com/firfircelik/network-project)
+  `agent status --json` snapshot and posts one `metric_type="mesh"`
+  metric per peer.
+- Quality rules + root causes for tunnel health (`mesh_peer_offline`,
+  `nat_traversal_limited`, ...), new thresholds, recommendations.
+- Dashboard "Mesh VPN" page (peer table, direct/relay counts, RTT trend).
+- `scripts/install.sh` (one-command setup incl. meshlink binaries and
+  pinned-key capture) and `scripts/run-all.sh` (full local stack).
+- Tests: 91 → 100.
 
 ## Release blocker status
 

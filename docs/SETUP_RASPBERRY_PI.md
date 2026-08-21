@@ -68,7 +68,7 @@ Run it manually first, then move to systemd:
 ```bash
 cd /home/pi/homenetiq
 make install
-make test                    # 91 tests should pass
+make test                    # 100 tests should pass
 HOMENETIQ_API_TOKEN=test-tok bash scripts/run_backend_dev.sh
 ```
 

@@ -7,6 +7,12 @@ network intelligence projesidir. Sadece kendi cihazından ve kendi
 ağından telemetry toplar; **Wi-Fi hacking, komşu ağ taraması veya
 saldırı aracı değildir**.
 
+Ayrıca [meshlink](https://github.com/firfircelik/network-project)
+şifreli P2P mesh VPN'inin sağlığını da izleyebilir — tünel yolu
+(direct/relay), RTT, rekey ve peer erişilebilirliği aynı kalite
+skoruna ve dashboard'a dahil olur. Detay:
+[docs/MESH_INTEGRATION.md](docs/MESH_INTEGRATION.md).
+
 ## Mimari
 
 - **Raspberry Pi** — Backend API + SQLite database + network probe
@@ -71,27 +77,46 @@ streamlit run dashboard/streamlit_app.py
 
 `http://localhost:8501` adresinde açılır.
 
+### 6. Opsiyonel: Mesh VPN izleme (meshlink)
+
+[meshlink](https://github.com/firfircelik/network-project) şifreli
+P2P mesh'inin sağlığını da izlemek istersen — tünel yolu (direct/relay),
+RTT, rekey ve peer durumu aynı dashboard'da:
+
+```bash
+./scripts/install.sh          # meshlink binary + config + systemd kurulumu
+sudo systemctl enable --now homenetiq-mesh-agent
+
+# veya tam yığını tek komutla (backend + dashboard dahil):
+./scripts/run-all.sh          # Dashboard: http://localhost:8501
+```
+
+Detay: `docs/MESH_INTEGRATION.md`.
+
 ## systemd
 
-`systemd/` dizinindeki 3 unit'i cihazına göre düzenle
+`systemd/` dizinindeki 4 unit'i cihazına göre düzenle
 (`User=`, `WorkingDirectory=`, `ExecStart=`, `EnvironmentFile=`).
 Kali service için `iw` çalıştıracaksa capability satırları gerekli.
+(`scripts/install.sh` bu alanları otomatik doldurur.)
 
 ```bash
 sudo cp systemd/homenetiq-backend.service   /etc/systemd/system/
 sudo cp systemd/homenetiq-pi-probe.service  /etc/systemd/system/
 sudo cp systemd/homenetiq-kali-agent.service /etc/systemd/system/   # Kali'de
+sudo cp systemd/homenetiq-mesh-agent.service /etc/systemd/system/  # mesh host'ta
 sudo systemctl daemon-reload
 sudo systemctl enable --now homenetiq-backend
 sudo systemctl enable --now homenetiq-pi-probe
 sudo systemctl enable --now homenetiq-kali-agent   # Kali'de
+sudo systemctl enable --now homenetiq-mesh-agent   # mesh host'ta
 ```
 
 ## Testler
 
 ```bash
 make install
-make test                    # 91 test
+make test                    # 100 test
 ```
 
 ## Güvenlik & Privacy

@@ -5,7 +5,7 @@ turns metrics into human-readable charts, tables, and explanations.
 
 ## Page structure
 
-8 pages, selectable from the sidebar:
+9 pages, selectable from the sidebar:
 
 | Page | Content |
 |---|---|
@@ -13,10 +13,15 @@ turns metrics into human-readable charts, tables, and explanations.
 | Devices | All devices, latest quality/score, status (active/stale/offline) |
 | Wi-Fi Metrics | RSSI/SNR/Tx-rate time series, band distribution, latest connection info |
 | Network Metrics | Gateway/AP/internet/DNS latency, packet loss, jitter, short notes |
+| Mesh VPN | meshlink tunnel health: peer table (established/path/RTT/rekeys), direct vs relay counts, RTT trend, diagnosis notes |
 | Issues & Root Cause | Recent issues (code + explanation), root-cause distribution |
 | Recommendations | Deduped, prioritised recommendation list |
 | Raw Metrics | Table + JSON debug view |
 | About / Setup | Project description, connection info, privacy, "what this is not" |
+
+The Mesh VPN page appears with data once the meshlink health agent
+(`collectors/meshlink_agent.py`) has reported at least one `mesh` metric —
+see `docs/MESH_INTEGRATION.md`.
 
 ## Environment variables
 
