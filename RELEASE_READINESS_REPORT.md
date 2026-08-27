@@ -84,7 +84,7 @@ These are intentionally out of v1; v2 will revisit:
 
 ```
 ┌─────────────────┐
-│ Mac mini (dev)  │  code written here, 91/91 tests passed
+│ Dev host  │  code written here, 91/91 tests passed
 └────────┬────────┘
          │ git push
          ▼
@@ -95,7 +95,7 @@ These are intentionally out of v1; v2 will revisit:
          ├──────────────────┬──────────────────┐
          ▼                  ▼                  ▼
   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-  │ Raspberry Pi │   │ Kali MB Air  │   │ Mac mini     │
+  │ Raspberry Pi │   │ Linux Wi-Fi host  │   │ macOS host     │
   │ (backend +   │   │ (Wi-Fi agent)│   │ (optional    │
   │  pi probe +  │   │              │   │  macOS Wi-Fi │
   │  dashboard)  │   │              │   │  agent)      │
@@ -104,17 +104,17 @@ These are intentionally out of v1; v2 will revisit:
 
 **Order:**
 
-1. **Mac mini (development)** — code lives here. `make test` passed.
+1. **macOS host (development)** — code lives here. `make test` passed.
 2. **Push to GitHub** — `git tag v1.0.0 && git push origin v1.0.0`
 3. **Raspberry Pi:**
    - `docs/SETUP_RASPBERRY_PI.md` steps
    - Backend + Pi probe + Dashboard on the same Pi
    - systemd enable
-4. **Kali MacBook Air:**
+4. **Linux Wi-Fi probe:**
    - `docs/SETUP_KALI_AGENT.md`
    - `make kali-once` to test
    - systemd enable (with CAP_NET_ADMIN)
-5. **(Optional) Mac mini Wi-Fi agent:**
+5. **(Optional) macOS host Wi-Fi agent:**
    - `docs/SETUP_MACOS_AGENT.md`
    - launchd or manual
 
@@ -122,7 +122,7 @@ These are intentionally out of v1; v2 will revisit:
 
 ```bash
 # 1. From repo root, with venv active
-cd /home/pi/homenetiq
+cd /home/YOUR_USER/homenetiq
 source .venv/bin/activate
 
 # 2. Tests

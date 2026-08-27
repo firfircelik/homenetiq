@@ -7,14 +7,14 @@
 ## Summary
 
 HomeNetIQ is now a self-hosted network intelligence platform that can
-be deployed on a Raspberry Pi + Kali MacBook Air + optional macOS
+be deployed on a Raspberry Pi + Linux Wi-Fi probe + optional macOS
 Wi-Fi probe, with all data staying on the user's own network.
 
 ## What's new
 
 ### Backend
 - FastAPI + lifespan async context manager (replaces deprecated `on_event`)
-- Bearer token auth (POST endpoints); GET endpoints open (LAN)
+- Bearer token auth on POST and (by default) GET data endpoints
 - SQLite + automatic migration (new columns via ALTER TABLE)
 - 7 REST endpoints: `/health`, `/api/v1/metrics`, `/api/v1/metrics/latest`, `/api/v1/devices`, `/api/v1/devices/{id}/latest`, `/api/v1/summary`, `/api/v1/anomalies`
 

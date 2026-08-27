@@ -34,6 +34,38 @@ from agents import (
 
 # --- Saf fonksiyonlar (test edilebilir) ---
 
+# Pin the meshlink status JSON major. Unknown major is a hard error;
+# extra fields on a known major are ignored. Missing schema_version is
+# treated as 1 (pre-contract meshlink binaries).
+STATUS_SCHEMA_MAJOR = 1
+
+
+def schema_major(snapshot: dict[str, Any]) -> int:
+    """Return the major version of a status snapshot."""
+    raw = snapshot.get("schema_version")
+    if raw is None:
+        return 1
+    if isinstance(raw, bool):
+        raise RuntimeError(f"invalid schema_version: {raw!r}")
+    if isinstance(raw, int):
+        return raw
+    text = str(raw).strip()
+    head = text.split(".", 1)[0]
+    try:
+        return int(head)
+    except ValueError as exc:
+        raise RuntimeError(f"invalid schema_version: {raw!r}") from exc
+
+
+def check_schema_version(snapshot: dict[str, Any]) -> None:
+    """Reject an unknown major; extras on a known major are ignored later."""
+    major = schema_major(snapshot)
+    if major != STATUS_SCHEMA_MAJOR:
+        raise RuntimeError(
+            f"unsupported meshlink status schema_version major={major} "
+            f"(want {STATUS_SCHEMA_MAJOR})"
+        )
+
 
 def parse_status_json(text: str) -> dict[str, Any]:
     """Parse `meshlink agent status --json` stdout into a dict.
@@ -75,6 +107,8 @@ def build_argvs(extra: dict[str, Any]) -> list[str]:
         argv += ["--relay", str(m["relay"])]
     if m.get("probe_peer"):
         argv += ["--probe-peer", str(m["probe_peer"])]
+    if m.get("preauth"):
+        argv += ["--preauth", str(m["preauth"])]
     return argv
 
 
@@ -85,6 +119,7 @@ def payloads_from_snapshot(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
     `established=None` so the quality engine scores only registry visibility
     instead of falsely reporting a downed peer.
     """
+    check_schema_version(snapshot)
     registry = snapshot.get("registry") or {}
     base = {
         "local_name": snapshot.get("name"),

@@ -7,17 +7,24 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backend.app.quality import classify_quality
 from backend.app.root_cause import classify_root_cause
-from collectors.meshlink_agent import payloads_from_snapshot, parse_status_json
+from collectors.meshlink_agent import (
+    build_argvs,
+    check_schema_version,
+    payloads_from_snapshot,
+    parse_status_json,
+    STATUS_SCHEMA_MAJOR,
+)
 from dashboard.formatters import latest_per_peer
 from backend.app.notifier import detect_transitions
 
 
 SAMPLE_SNAPSHOT = {
+    "schema_version": 1,
     "name": "b",
     "pubkey": "abc123",
-    "public_endpoint": "192.168.1.113:19502",
-    "relay": "192.168.1.113:19205",
-    "coordinator": "192.168.1.113:19200",
+    "public_endpoint": "203.0.113.20:19502",
+    "relay": "203.0.113.10:19205",
+    "coordinator": "203.0.113.10:19200",
     "registry": {"count": 2, "total": 3, "up_s": 12},
     "peers": [
         {
@@ -28,7 +35,7 @@ SAMPLE_SNAPSHOT = {
             "rtt_history_ms": [0.369, 0.979],
             "rekeys": 2,
             "age_s": 647.7,
-            "endpoint": "192.168.1.113:19501",
+            "endpoint": "203.0.113.20:19501",
         }
     ],
 }
@@ -40,6 +47,21 @@ def test_parse_status_json_tolerates_leading_noise():
     text = 'time=... level=INFO msg="public key"\n{"name": "b", "peers": []}'
     snap = parse_status_json(text)
     assert snap["name"] == "b"
+
+
+def test_build_argvs_includes_preauth():
+    argv = build_argvs({
+        "meshlink": {
+            "bin": "/usr/bin/agent",
+            "name": "b",
+            "keyfile": "/tmp/key",
+            "coordinator": "203.0.113.10:19200",
+            "coord_pubkey": "aa",
+            "preauth": "secret",
+        }
+    })
+    assert "--preauth" in argv
+    assert "secret" in argv
 
 
 def test_payloads_one_per_peer():
@@ -61,6 +83,31 @@ def test_payloads_empty_peers_is_not_peer_down():
     assert len(payloads) == 1
     assert payloads[0]["established"] is None
     assert payloads[0]["registry_count"] == 0
+
+
+def test_missing_schema_version_treated_as_v1():
+    snap = {"name": "b", "registry": {"count": 0, "total": 0, "up_s": 1}, "peers": []}
+    check_schema_version(snap)
+    assert payloads_from_snapshot(snap)[0]["registry_count"] == 0
+
+
+def test_unknown_schema_major_is_hard_error():
+    snap = dict(SAMPLE_SNAPSHOT)
+    snap["schema_version"] = STATUS_SCHEMA_MAJOR + 1
+    try:
+        payloads_from_snapshot(snap)
+    except RuntimeError as exc:
+        assert "unsupported" in str(exc)
+    else:
+        raise AssertionError("expected RuntimeError for unknown major")
+
+
+def test_extra_fields_on_known_major_are_ignored():
+    snap = dict(SAMPLE_SNAPSHOT)
+    snap["future_flag"] = True
+    payloads = payloads_from_snapshot(snap)
+    assert payloads[0]["peer_id"] == "a"
+    assert payloads[0]["rtt_ms"] == 0.369
 
 
 # --- Quality rules ---

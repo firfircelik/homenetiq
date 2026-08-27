@@ -21,6 +21,7 @@ from agents import (
     AgentConfig,
     apply_privacy,
     load_agent_config,
+    empty_required_targets,
     now_iso,
     ping_stats,
     post_metric,
@@ -198,9 +199,13 @@ def main() -> int:
         return 1
 
     targets = cfg.extra.get("targets", {})
-    missing = [k for k in ("gateway_ip", "ap_ip", "internet_ip") if k not in targets]
+    missing = empty_required_targets(targets)
     if missing:
-        print(f"Config'te eksik target: {', '.join(missing)}", file=sys.stderr, flush=True)
+        print(
+            f"targets.{missing[0]} empty — fill YOUR network (init does not invent a gateway)",
+            file=sys.stderr,
+            flush=True,
+        )
         return 1
 
     while True:

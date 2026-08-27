@@ -6,6 +6,7 @@ field is missing, a clear error is raised.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -80,6 +81,20 @@ _REQUIRED_DEVICE_KEYS = ("id", "name", "type", "os", "agent_version")
 _REQUIRED_BACKEND_KEYS = ("url",)
 
 
+def empty_required_targets(
+    targets: dict[str, Any],
+    required: tuple[str, ...] = ("gateway_ip", "internet_ip"),
+) -> list[str]:
+    """Return required target keys that are missing or blank.
+
+    `ap_ip` is optional. Init copies leave gateway_ip empty on purpose;
+    collectors must fail loudly instead of pinging an invented router.
+    """
+    if not isinstance(targets, dict):
+        return list(required)
+    return [k for k in required if not str(targets.get(k) or "").strip()]
+
+
 def load_agent_config(path: str | Path) -> AgentConfig:
     """Read a YAML config file, validate it, and return an AgentConfig.
 
@@ -119,6 +134,13 @@ def load_agent_config(path: str | Path) -> AgentConfig:
     known_top = {"device", "backend", "collector", "privacy"}
     extra = {k: v for k, v in raw.items() if k not in known_top}
 
+    yaml_token = str(backend.get("token", "") or "").strip()
+    env_token = os.getenv("HOMENETIQ_API_TOKEN", "").strip()
+    if yaml_token in ("", "change-me-local-token") and env_token:
+        api_token = env_token
+    else:
+        api_token = yaml_token or env_token
+
     return AgentConfig(
         device_id=str(device["id"]),
         device_name=str(device["name"]),
@@ -126,7 +148,7 @@ def load_agent_config(path: str | Path) -> AgentConfig:
         os=str(device["os"]),
         agent_version=str(device["agent_version"]),
         backend_url=str(backend["url"]),
-        api_token=str(backend.get("token", "")) or "",
+        api_token=api_token,
         interval_seconds=int(collector.get("interval_seconds", 30)),
         retry_delay_seconds=int(collector.get("retry_delay_seconds", 10)),
         timeout_seconds=int(collector.get("timeout_seconds", 10)),

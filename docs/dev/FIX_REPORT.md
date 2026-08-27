@@ -156,7 +156,7 @@ python3 collectors/kali_wifi_agent.py --config config/kali_agent.yaml --once
 ### Dashboard
 
 ```bash
-export HOMENETIQ_BACKEND_URL="http://192.168.1.50:8080"
+export HOMENETIQ_BACKEND_URL="http://YOUR_BACKEND_HOST:8080"
 export HOMENETIQ_API_TOKEN="<token from backend .env>"
 streamlit run dashboard/streamlit_app.py
 ```

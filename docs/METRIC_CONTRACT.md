@@ -10,7 +10,7 @@ Body of `POST /api/v1/metrics` (JSON):
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `device_id` | string (≥2) | yes | Persistent device identifier (e.g. `"kali-macbook-air"`) |
+| `device_id` | string (≥2) | yes | Persistent device identifier (e.g. `"linux-wifi-1"`) |
 | `device_type` | string | yes | `"wifi_probe"`, `"network_probe"`, `"browser_probe"` |
 | `metric_type` | string | yes | `"wifi"`, `"network"`, `"dns"`, `"channel_scan"`, `"mesh"` |
 | `payload` | object | yes | Metric-specific fields (below) |
@@ -112,15 +112,15 @@ by the backend; agents should use the canonical `"2.4GHz"` form.
 
 ```json
 {
-  "device_id": "kali-macbook-air",
-  "device_name": "Kali MacBook Air 2015",
+  "device_id": "linux-wifi-1",
+  "device_name": "Linux Wi-Fi probe",
   "device_type": "wifi_probe",
-  "os": "kali-linux",
+  "os": "linux",
   "agent_version": "1.0.0",
   "metric_type": "wifi",
   "collected_at": "2026-06-14T17:45:01.123456+00:00",
   "payload": {
-    "ssid": "HomeNetIQ-Lab",
+    "ssid": "YOUR_SSID",
     "bssid_redacted": "...:44:55",
     "frequency_mhz": 5180,
     "band": "5GHz",
@@ -139,8 +139,8 @@ by the backend; agents should use the canonical `"2.4GHz"` form.
     "internet_latency_ms": 18.5,
     "jitter_ms": 0.6,
     "packet_loss_percent": 0.0,
-    "target_gateway_ip": "192.168.1.1",
-    "target_ap_ip": "192.168.1.103",
+    "target_gateway_ip": "192.0.2.1",
+    "target_ap_ip": "192.0.2.30",
     "target_internet_ip": "1.1.1.1",
     "interface": "wlan0"
   }
@@ -151,15 +151,15 @@ by the backend; agents should use the canonical `"2.4GHz"` form.
 
 ```json
 {
-  "device_id": "raspberry-pi",
+  "device_id": "network-probe-1",
   "device_type": "network_probe",
-  "os": "raspberry-pi-os",
+  "os": "linux",
   "agent_version": "1.0.0",
   "metric_type": "network",
   "collected_at": "2026-06-14T17:45:01.987654+00:00",
   "payload": {
-    "gateway_ip": "192.168.1.1",
-    "ap_ip": "192.168.1.103",
+    "gateway_ip": "192.0.2.1",
+    "ap_ip": "192.0.2.30",
     "internet_ip": "1.1.1.1",
     "gateway_latency_ms": 1.1,
     "ap_latency_ms": 2.0,

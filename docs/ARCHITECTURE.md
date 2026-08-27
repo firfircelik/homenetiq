@@ -47,17 +47,23 @@ and produce human-readable reports.
 
 ## API surface
 
+GET `/health` is unauthenticated. All other GET data endpoints require a
+Bearer token when `HOMENETIQ_REQUIRE_GET_AUTH` is true (the default).
+`POST /api/v1/metrics` always requires the token. `/api/v1/mesh/pubkey`
+needs the API token or `HOMENETIQ_ENROLL_TOKEN`.
+
 | Method | Path | Auth |
 |---|---|---|
 | GET  | `/health` | - |
 | POST | `/api/v1/metrics` | Bearer token |
-| GET  | `/api/v1/metrics/latest` | - |
-| GET  | `/api/v1/devices` | - |
-| GET  | `/api/v1/devices/{device_id}/latest` | - |
-| GET  | `/api/v1/summary` | - |
-| GET  | `/api/v1/anomalies` | - |
+| GET  | `/api/v1/metrics/latest` | Bearer (default) |
+| GET  | `/api/v1/devices` | Bearer (default) |
+| GET  | `/api/v1/devices/{device_id}/latest` | Bearer (default) |
+| GET  | `/api/v1/summary` | Bearer (default) |
+| GET  | `/api/v1/anomalies` | Bearer (default) |
+| GET  | `/api/v1/mesh/pubkey` | Bearer or enroll token |
 
-GET endpoints are open because the dashboard runs on the same machine
-and only on the LAN. Do not expose the backend to the public internet.
+Do not expose the backend to the public internet. For LAN access, bind
+uvicorn to `127.0.0.1` and put Caddy in front (`contrib/Caddyfile`).
 
 > 🇹🇷 Türkçe: [docs/tr/ARCHITECTURE.tr.md](tr/ARCHITECTURE.tr.md)

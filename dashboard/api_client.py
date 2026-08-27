@@ -27,8 +27,8 @@ def get_backend_url() -> str:
 def get_api_token() -> str:
     """Return the API token from HOMENETIQ_API_TOKEN.
 
-    GET endpoints do not require auth, so it can be empty. This helper is
-    kept so a future auth change needs no dashboard code update.
+    GET endpoints require this token when HOMENETIQ_REQUIRE_GET_AUTH is on
+    (the default). The dashboard sends it on every request.
     """
     return os.getenv("HOMENETIQ_API_TOKEN", "")
 

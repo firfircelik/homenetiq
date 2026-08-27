@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/firfircelik/homenetiq/docs/MESH_STATUS.schema.json",
+  "title": "meshlink agent status --json (pinned copy)",
+  "description": "Pinned copy of meshlink docs/STATUS_JSON.schema.json. HomeNetIQ collectors reject an unknown major and ignore extra fields on a known major. Keep this file in sync when schema_version major changes.",
+  "type": "object",
+  "required": ["schema_version", "name", "pubkey", "registry", "peers"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Major schema version. Consumers MUST reject an unknown major."
+    },
+    "name": { "type": "string" },
+    "pubkey": { "type": "string" },
+    "public_endpoint": { "type": "string" },
+    "relay": { "type": "string" },
+    "coordinator": { "type": "string" },
+    "registry_error": { "type": "string" },
+    "registry": {
+      "type": "object",
+      "required": ["count", "total", "up_s"],
+      "additionalProperties": true,
+      "properties": {
+        "count": { "type": "integer", "minimum": 0 },
+        "total": { "type": "integer", "minimum": 0 },
+        "up_s": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "peers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "established", "path"],
+        "additionalProperties": true,
+        "properties": {
+          "id": { "type": "string" },
+          "established": { "type": "boolean" },
+          "path": { "type": "string", "enum": ["none", "direct", "relay"] },
+          "rtt_ms": { "type": ["number", "null"] },
+          "rtt_history_ms": {
+            "type": "array",
+            "items": { "type": "number" }
+          },
+          "rekeys": { "type": "integer", "minimum": 0 },
+          "age_s": { "type": "number", "minimum": 0 },
+          "bytes_sent": { "type": "integer", "minimum": 0 },
+          "bytes_recv": { "type": "integer", "minimum": 0 },
+          "endpoint": { "type": "string" }
+        }
+      }
+    }
+  }
+}

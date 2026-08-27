@@ -25,8 +25,12 @@ CONFIG_MACOS  ?= config/macos_agent.yaml
 CONFIG_PI     ?= config/pi_probe.yaml
 CONFIG_MESH   ?= config/meshlink_agent.yaml
 
-HOST ?= 0.0.0.0
+HOST ?= 127.0.0.1
 PORT ?= 8080
+DB   ?= data/homenetiq.sqlite3
+
+.PHONY: help install init test test-fast run-backend run-dashboard \
+        kali-once macos-once pi-probe-once mesh-once backup clean lint
 
 .PHONY: help install test test-fast run-backend run-dashboard \
         kali-once macos-once pi-probe-once mesh-once clean lint
@@ -34,11 +38,13 @@ PORT ?= 8080
 help:
 	@echo "HomeNetIQ v1 — Makefile"
 	@echo ""
+	@echo "  make init            Token + starter YAML (gateway boş kalır)"
 	@echo "  make install         Sanal ortam kur + requirements kur"
 	@echo "  make test            Tüm testleri çalıştır (pytest tests/ -v)"
 	@echo "  make test-fast       Testleri verbose'siz çalıştır"
-	@echo "  make run-backend     Backend'i geliştirme modunda başlat (uvicorn --reload)"
+	@echo "  make run-backend     Backend (127.0.0.1:8080, GET auth açık)"
 	@echo "  make run-dashboard   Streamlit dashboard'u başlat"
+	@echo "  make backup          SQLite kopyası (data/backups/); retention sizin"
 	@echo "  make kali-once       Kali Wi-Fi agent'ı bir tick çalıştır"
 	@echo "  make macos-once      macOS Wi-Fi agent'ı bir tick çalıştır"
 	@echo "  make pi-probe-once   Pi network probe'u bir tick çalıştır"
@@ -50,6 +56,21 @@ help:
 install:
 	test -d $(VENV) || $(PY) -m venv $(VENV)
 	. $(VENV)/bin/activate && $(PIP) install -q -r $(REQ)
+
+init:
+	bash scripts/homenetiq-init.sh
+
+backup:
+	mkdir -p data/backups
+	@test -f $(DB) || { echo "Veritabanı yok: $(DB) — önce backend'i çalıştırın."; exit 1; }
+	cp $(DB) data/backups/homenetiq-$$(date +%Y%m%dT%H%M%S).sqlite3
+	@if command -v sqlite3 >/dev/null 2>&1; then \
+	  sqlite3 $(DB) ".backup data/backups/homenetiq-latest.sqlite3"; \
+	fi
+	@echo "Kopyalandı. Metrik tablosu büyür; eski yedekleri siz silin."
+
+lint:
+	$(PY) -m ruff check backend collectors dashboard probes agents tests
 
 test:
 	$(PY) -m pytest tests/ -v

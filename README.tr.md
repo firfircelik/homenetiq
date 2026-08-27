@@ -1,54 +1,41 @@
-# HomeNetIQ v1.0.0 (Türkçe)
+# HomeNetIQ (Türkçe)
 
 > 🇬🇧 English documentation: [README.md](README.md)
 
-HomeNetIQ, ev ağı ve Wi-Fi bağlantı kalitesini ölçen self-hosted bir
-network intelligence projesidir. Sadece kendi cihazından ve kendi
-ağından telemetry toplar; **Wi-Fi hacking, komşu ağ taraması veya
-saldırı aracı değildir**.
+HomeNetIQ, **senin** ağının kalitesini ölçen self-hosted bir panodur.
+Varsayılan router, Pi veya AP yoktur: `make init` ile token üretir,
+`targets` alanlarını sen doldurursun.
 
-Ayrıca [meshlink](https://github.com/firfircelik/network-project)
-şifreli P2P mesh VPN'inin sağlığını da izleyebilir — tünel yolu
-(direct/relay), RTT, rekey ve peer erişilebilirliği aynı kalite
-skoruna ve dashboard'a dahil olur. Detay:
-[docs/MESH_INTEGRATION.md](docs/MESH_INTEGRATION.md).
+İsteğe bağlı: [meshlink](https://github.com/firfircelik/network-project)
+mesh VPN sağlığı. HomeNetIQ mesh'i **izler**, meshlink mesh'i **işletir**.
+
+## Hızlı kurulum
+
+```bash
+make init
+set -a && source backend/.env && set +a
+make install
+make run-backend   # 127.0.0.1:8080, GET auth açık
+```
 
 ## Mimari
 
-- **Raspberry Pi** — Backend API + SQLite database + network probe
-- **Kali Linux MacBook Air** — Wi-Fi probe
-- **TP-Link TL-WR850N** — Lab AP
-- **Opsiyonel Mac mini** — ikinci probe veya geliştirme cihazı
+Kendi ağını bağla. Tipik roller (donanım serbest):
 
-> Tüm komutlar **repo kök dizininden** (`HomeNetIQ_v1/`) çalıştırılır.
-> Sadece `pip install` ve `python -m venv` adımları backend venv'i için
-> `backend/` altında yapılır.
+- **Backend** — FastAPI + SQLite (herhangi bir Linux)
+- **Wi-Fi probe** — Linux (`iw`) ve/veya macOS
+- **Ağ probe** — gateway / AP / internet gecikmesi (backend ile aynı makine olabilir)
+- **Senin router ve AP** — `targets` sen doldurursun
 
-## Hızlı Kurulum
+> Tüm komutlar **repo kökünden** çalıştırılır.
+> `pip install` ve `python -m venv` backend sanal ortamında yapılır.
 
-### 1. API Token Üret
+## Hızlı Kurulum (detay)
 
-```bash
-openssl rand -hex 32
-```
+İngilizce README'deki `make init` akışını izleyin. Raspberry Pi zorunlu
+değildir. API `127.0.0.1` dinler; LAN için `contrib/Caddyfile`.
 
-> `change-me-local-token` değeri yalnızca README ve örnek konfig
-> dosyalarında geçer. Üretimde **kullanma**.
-
-### 2. Raspberry Pi Backend
-
-```bash
-cp config/backend.env.example backend/.env
-# backend/.env içinde HOMENETIQ_API_TOKEN değiştir
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cd ..
-uvicorn backend.app.main:app --host 0.0.0.0 --port 8080
-```
-
-### 3. Pi Network Probe
+### 3. Ağ probe (isteğe bağlı host)
 
 ```bash
 cp config/pi_probe.yaml.example config/pi_probe.yaml
@@ -70,7 +57,7 @@ python3 collectors/kali_wifi_agent.py --config config/kali_agent.yaml --once
 ### 5. Dashboard
 
 ```bash
-export HOMENETIQ_BACKEND_URL="http://192.168.1.50:8080"
+export HOMENETIQ_BACKEND_URL="http://YOUR_BACKEND_HOST:8080"
 export HOMENETIQ_API_TOKEN="<yukarıda ürettiğin token>"
 streamlit run dashboard/streamlit_app.py
 ```
@@ -96,7 +83,7 @@ sudo systemctl enable --now homenetiq-mesh-agent
 İkinci cihazda (aynı LAN) anahtar kopyalamaya gerek yok:
 
 ```bash
-./scripts/join.sh 192.168.1.113 linux   # <host-ip> [isim]
+./scripts/join.sh YOUR_COORDINATOR_HOST linux   # <host-ip> [isim]
 ```
 
 Pinli coordinator public key'ini host backend'inden kendisi çeker ve

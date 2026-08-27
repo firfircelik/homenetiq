@@ -1,12 +1,12 @@
 device:
-  id: "mac-mini-wifi"
-  name: "Mac mini Wi-Fi Probe"
+  id: "macos-wifi-1"
+  name: "macOS Wi-Fi probe"
   type: "wifi_probe"
   os: "macos"
   agent_version: "1.0.0"
 
 backend:
-  url: "http://192.168.1.50:8080/api/v1/metrics"
+  url: "http://YOUR_BACKEND_HOST:8080/api/v1/metrics"
   token: "change-me-local-token"
 
 collector:
@@ -19,6 +19,6 @@ privacy:
   salt: ""
 
 targets:
-  gateway_ip: "192.168.1.1"
-  ap_ip: "192.168.1.103"
+  gateway_ip: ""      # your router LAN IP
+  ap_ip: ""           # optional AP management IP
   internet_ip: "1.1.1.1"

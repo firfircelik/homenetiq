@@ -1,28 +1,31 @@
 # Raspberry Pi Setup
 
-This document describes how to install the HomeNetIQ backend, the
-network probe, and the dashboard on a Raspberry Pi. The goal is a
-single command on the Pi that starts everything, with the service
-managed by systemd.
+This document is **one** way to run HomeNetIQ — a Raspberry Pi is optional.
+Any Linux host (VM, NUC, old laptop) works the same; substitute paths and
+`User=` accordingly. There is no required SKU.
+
+This walkthrough installs the backend, an optional network probe, and the
+dashboard. The goal is a single command that starts everything, with the
+service managed by systemd.
 
 ## 1. Prerequisites
 
 - Raspberry Pi OS Bookworm (Debian 12) or similar
 - Python 3.11 or 3.12 (default on Pi OS; check with `python3 --version`)
 - Internet access (for the first `pip install`)
-- A static LAN IP or DHCP reservation (e.g. `192.168.1.50`)
+- A static LAN IP or DHCP reservation (e.g. `YOUR_BACKEND_HOST`)
 - Free ports 8080 (backend) and 8501 (dashboard)
 
 ## 2. User and directory
 
 In this example the user is `pi` and the repo lives at
-`/home/pi/homenetiq`:
+`/home/YOUR_USER/homenetiq`:
 
 ```bash
 sudo useradd -m -s /bin/bash pi    # already exists on default Pi OS
 sudo -iu pi
-git clone https://github.com/<user>/HomeNetIQ.git /home/pi/homenetiq
-cd /home/pi/homenetiq
+git clone https://github.com/<user>/HomeNetIQ.git /home/YOUR_USER/homenetiq
+cd /home/YOUR_USER/homenetiq
 ```
 
 > **IMPORTANT:** The systemd unit files are templates. Before
@@ -33,7 +36,7 @@ cd /home/pi/homenetiq
 ## 3. Virtualenv and dependencies
 
 ```bash
-cd /home/pi/homenetiq
+cd /home/YOUR_USER/homenetiq
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r backend/requirements.txt
@@ -52,7 +55,7 @@ nano backend/.env
 Production values:
 
 ```
-HOMENETIQ_DB_PATH=/home/pi/homenetiq/data/homenetiq.sqlite3
+HOMENETIQ_DB_PATH=/home/YOUR_USER/homenetiq/data/homenetiq.sqlite3
 HOMENETIQ_API_TOKEN=<output of `openssl rand -hex 32`>
 HOMENETIQ_REQUIRE_AUTH=true
 HOMENETIQ_STALE_AFTER_SECONDS=120
@@ -66,9 +69,9 @@ The `data/` directory is created automatically at runtime.
 Run it manually first, then move to systemd:
 
 ```bash
-cd /home/pi/homenetiq
+cd /home/YOUR_USER/homenetiq
 make install
-make test                    # 100 tests should pass
+make test                    # pytest should pass
 HOMENETIQ_API_TOKEN=test-tok bash scripts/run_backend_dev.sh
 ```
 
@@ -148,7 +151,7 @@ Streamlit binds to localhost by default. To expose on the LAN:
 
 ```bash
 # Extra systemd unit, or via nohup:
-HOMENETIQ_BACKEND_URL=http://192.168.1.50:8080 \
+HOMENETIQ_BACKEND_URL=http://YOUR_BACKEND_HOST:8080 \
 nohup .venv/bin/streamlit run dashboard/streamlit_app.py \
   --server.address 0.0.0.0 --server.port 8501 \
   > logs/dashboard.log 2>&1 &
@@ -163,14 +166,17 @@ section in the README.
 # Backend
 curl -s http://127.0.0.1:8080/health
 
-# Devices
-curl -s http://127.0.0.1:8080/api/v1/devices
+# Devices (GET auth is on by default)
+curl -s -H "Authorization: Bearer $HOMENETIQ_API_TOKEN" \
+  http://127.0.0.1:8080/api/v1/devices
 
 # Latest metrics
-curl -s http://127.0.0.1:8080/api/v1/metrics/latest?limit=5
+curl -s -H "Authorization: Bearer $HOMENETIQ_API_TOKEN" \
+  http://127.0.0.1:8080/api/v1/metrics/latest?limit=5
 
 # Summary
-curl -s http://127.0.0.1:8080/api/v1/summary
+curl -s -H "Authorization: Bearer $HOMENETIQ_API_TOKEN" \
+  http://127.0.0.1:8080/api/v1/summary
 ```
 
 ## 10. Common errors
@@ -188,7 +194,7 @@ See `docs/TROUBLESHOOTING.md`. Summary:
 ## 11. Upgrading (later)
 
 ```bash
-cd /home/pi/homenetiq
+cd /home/YOUR_USER/homenetiq
 git pull
 source .venv/bin/activate
 pip install -r backend/requirements.txt

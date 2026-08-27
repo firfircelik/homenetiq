@@ -101,7 +101,7 @@ pytest tests/ -v
 ```
 
 ```bash
-export HOMENETIQ_BACKEND_URL="http://192.168.1.50:8080"
+export HOMENETIQ_BACKEND_URL="http://YOUR_BACKEND_HOST:8080"
 streamlit run dashboard/streamlit_app.py
 # http://localhost:8501
 ```

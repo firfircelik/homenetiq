@@ -1,0 +1,26 @@
+# Reverse proxy example for LAN access with optional TLS.
+# Backend listens on 127.0.0.1:8080; dashboard on 127.0.0.1:8501.
+#
+#   caddy run --config contrib/Caddyfile
+#
+# Replace YOUR_HOSTNAME. Local HTTP without TLS is fine only on a trusted LAN.
+
+YOUR_HOSTNAME {
+	encode gzip
+
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle /health {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle /docs* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle /openapi.json {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle {
+		reverse_proxy 127.0.0.1:8501
+	}
+}

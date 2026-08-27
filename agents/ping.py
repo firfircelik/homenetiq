@@ -26,6 +26,9 @@ def ping_stats(target: str, count: int = 5, timeout: int = 15) -> dict[str, Opti
     On failure, avg/min/max/jitter are None and packet_loss_percent is 100.
     """
 
+    if not str(target or "").strip():
+        return _unreachable()
+
     try:
         result = subprocess.run(
             _build_ping_cmd(target, count),

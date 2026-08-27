@@ -93,7 +93,7 @@ curl http://127.0.0.1:8080/api/v1/devices
 
 ## 10. Sık karşılaşılan hatalar
 
-- Backend connection refused: Pi IP/port yanlış, firewall kontrolü.
+- Backend connection refused: backend host/port yanlış, firewall kontrolü.
 - 401 Unauthorized: token uyuşmuyor.
 - `Operation not permitted`: CAP_NET_ADMIN gerekli.
 - Wi-Fi interface not found: `iw dev` çıktısını kontrol et.

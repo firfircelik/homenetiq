@@ -96,19 +96,19 @@ Agent/probe config (YAML): `config/kali_agent.yaml.example` and
 
 ### 3.2 Medium priority
 
-4. **`config/backend.env.example` points the DB at `/home/pi/homenetiq/data/homenetiq.sqlite3`, but `systemd/homenetiq-backend.service` uses `WorkingDirectory=/home/pi/homenetiq/backend`.** `HOMENETIQ_DB_PATH` comes from EnvironmentFile, so it's not a runtime bug, but the README "Quick Start" doesn't create the `data/` directory. `database.py:19` resolves it at runtime via `parent.mkdir(parents=True, exist_ok=True)`, which is good, but undocumented.
+4. **`config/backend.env.example` points the DB at `/home/YOUR_USER/homenetiq/data/homenetiq.sqlite3`, but `systemd/homenetiq-backend.service` uses `WorkingDirectory=/home/YOUR_USER/homenetiq/backend`.** `HOMENETIQ_DB_PATH` comes from EnvironmentFile, so it's not a runtime bug, but the README "Quick Start" doesn't create the `data/` directory. `database.py:19` resolves it at runtime via `parent.mkdir(parents=True, exist_ok=True)`, which is good, but undocumented.
 
 5. **README "Quick Start" Kali step has an implicit path:**
    `README.md:30` says:
    ```
    python collectors/kali_wifi_agent.py --config config/kali_agent.yaml --once
    ```
-   This must be run from the repo root (since the agent file lives in `collectors/`). The README has no `cd <repo>` step. Same issue for Pi: `systemd/homenetiq-pi-probe.service:9` uses `WorkingDirectory=/home/pi/homenetiq`; the service works because of that, but it's not reflected in the README.
+   This must be run from the repo root (since the agent file lives in `collectors/`). The README has no `cd <repo>` step. Same issue for Pi: `systemd/homenetiq-pi-probe.service:9` uses `WorkingDirectory=/home/YOUR_USER/homenetiq`; the service works because of that, but it's not reflected in the README.
 
 6. **`systemd/homenetiq-kali-agent.service` runner path / username is inconsistent.**
-   - `User=firat`, `WorkingDirectory=/home/firat/homenetiq`, `.venv` path `/home/firat/homenetiq/.venv` — Kali/MacBook personal.
-   - Backend unit `User=pi`, `WorkingDirectory=/home/pi/homenetiq/backend` — Pi.
-   - This may be intentional, but the README doesn't say "Kali = firat user"; deployment is confusing.
+   - `User=YOUR_USER`, `WorkingDirectory=/home/YOUR_USER/homenetiq` — operator-specific; templates must stay generic.
+   - Backend unit `User=pi`, `WorkingDirectory=/home/YOUR_USER/homenetiq/backend` — Pi.
+   - This may be intentional, but the README must not name a specific operator account; deployment is confusing.
 
 7. **Kali agent invokes `iw` without `sudo` / capability configuration.** README and systemd unit have no sudo / capability note. Practically most modern laptops allow `iw dev` read, but `iw dev <iface> link` requires `CAP_NET_ADMIN` on many systems. systemd service will likely start but log errors on every tick. Documentation missing.
 
@@ -147,7 +147,7 @@ Agent/probe config (YAML): `config/kali_agent.yaml.example` and
 | 3 | **P1** | README missing `cd <repo>` step for agent/probe commands | Add a directory note in the README |
 | 4 | **P1** | `iw` root/cap requirement undocumented | Add a note in README + systemd unit; recommend `CAP_NET_ADMIN` |
 | 5 | **P1** | Dashboard envs (BACKEND_URL, API_TOKEN) missing | Add `export ...` examples in the README |
-| 6 | **P1** | systemd user names not reflected in README | Add a "Pi=pi, Kali=firat" note |
+| 6 | **P1** | systemd user names not reflected in README | Add a "fill in YOUR_USER before install" note |
 | 7 | **P1** | Kali agent main loop does not catch RuntimeError | Top-level try/except + log + short retry |
 | 8 | **P2** | Test coverage only quality/root_cause | Add tests for `database`, `models`, `parse_iw_link`, `ping_stats` |
 | 9 | **P2** | `tests/` package not arranged + no `pytest.ini` / `pyproject.toml` | Set `pythonpath = .` |

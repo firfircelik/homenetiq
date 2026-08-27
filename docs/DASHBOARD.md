@@ -28,10 +28,9 @@ see `docs/MESH_INTEGRATION.md`.
 | Variable | Default | Description |
 |---|---|---|
 | `HOMENETIQ_BACKEND_URL` | `http://127.0.0.1:8080` | Backend root URL |
-| `HOMENETIQ_API_TOKEN` | (empty) | Optional. GET endpoints do not require auth; if a token is set, the `Authorization` header is added. |
+| `HOMENETIQ_API_TOKEN` | (required) | Bearer token. GET endpoints require it when `HOMENETIQ_REQUIRE_GET_AUTH` is true (default). |
 
-> GET endpoints do not require auth in v1, so the dashboard works
-> without a token. If auth is added later, the same variable will work.
+Dashboard and backend must share this token.
 
 ## Running the dashboard
 
@@ -40,7 +39,7 @@ see `docs/MESH_INTEGRATION.md`.
 streamlit run dashboard/streamlit_app.py
 
 # From another device (must be able to reach the Pi)
-export HOMENETIQ_BACKEND_URL="http://192.168.1.50:8080"
+export HOMENETIQ_BACKEND_URL="http://YOUR_BACKEND_HOST:8080"
 streamlit run dashboard/streamlit_app.py
 
 # To expose on the LAN (default port 8501)

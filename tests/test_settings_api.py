@@ -21,10 +21,10 @@ def app():
 
 def test_settings_defaults(app):
     with TestClient(app) as c:
-        data = c.get("/api/v1/settings").json()
+        data = c.get("/api/v1/settings", headers=AUTH).json()
         assert data["notify_url"] == ""
         assert data["mesh_pubkey_set"] is False
-        assert data["get_auth"] is False
+        assert data["get_auth"] is True
 
 
 def test_settings_post_requires_token(app):
@@ -60,7 +60,7 @@ def test_settings_roundtrip_and_persist(app):
         assert r.json()["applied"]["notify_url"] == "https://ntfy.sh/my-topic"
 
         # GET reflects the change (runtime-applied)
-        assert c.get("/api/v1/settings").json()["notify_url"] == "https://ntfy.sh/my-topic"
+        assert c.get("/api/v1/settings", headers=AUTH).json()["notify_url"] == "https://ntfy.sh/my-topic"
 
     # persisted override survives a fresh app instance (file-based)
     from backend.app.settings import Settings
@@ -74,17 +74,15 @@ def test_clear_notify_url_with_empty_string(app):
         c.post("/api/v1/settings", json={"notify_url": "https://ntfy.sh/t"}, headers=AUTH)
         r = c.post("/api/v1/settings", json={"notify_url": ""}, headers=AUTH)
         assert r.status_code == 200
-        assert c.get("/api/v1/settings").json()["notify_url"] == ""
+        assert c.get("/api/v1/settings", headers=AUTH).json()["notify_url"] == ""
 
 
-def test_optional_get_auth_toggle(app):
+def test_optional_get_auth_can_be_turned_off(app):
     from backend.app.settings import settings
 
-    settings.get_auth = True
+    settings.get_auth = False
     try:
         with TestClient(app) as c:
-            assert c.get("/api/v1/devices").status_code == 401
-            ok = c.get("/api/v1/devices", headers=AUTH)
-            assert ok.status_code == 200
+            assert c.get("/api/v1/devices").status_code == 200
     finally:
-        settings.get_auth = False
+        settings.get_auth = True

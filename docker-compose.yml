@@ -1,0 +1,70 @@
+# HomeNetIQ — backend + dashboard. Mesh collector is an optional profile.
+#
+#   make init                 # writes backend/.env with a random token
+#   docker compose up --build
+#
+# Do not copy config/backend.env.example as-is: change-me-local-token
+# refuses to start unless HOMENETIQ_ALLOW_INSECURE=1.
+#
+# Overview is empty until you attach probes. Mesh is not required:
+#   docker compose --profile mesh up
+#
+# linux/arm64 (e.g. Raspberry Pi) uses the same file; Docker builds the image
+# for the host architecture.
+
+services:
+  backend:
+    build: .
+    command: ["python", "-m", "uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+    ports:
+      - "8080:8080"
+    env_file:
+      - backend/.env
+    environment:
+      HOMENETIQ_DB_PATH: /data/homenetiq.sqlite3
+      HOMENETIQ_REQUIRE_AUTH: "true"
+      HOMENETIQ_REQUIRE_GET_AUTH: "true"
+    volumes:
+      - homenetiq-data:/data
+    restart: unless-stopped
+
+  dashboard:
+    build: .
+    command:
+      - python
+      - -m
+      - streamlit
+      - run
+      - dashboard/streamlit_app.py
+      - --server.address
+      - 0.0.0.0
+      - --server.port
+      - "8501"
+      - --server.headless
+      - "true"
+    ports:
+      - "8501:8501"
+    env_file:
+      - backend/.env
+    environment:
+      HOMENETIQ_BACKEND_URL: http://backend:8080
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  mesh-collector:
+    profiles: ["mesh"]
+    build: .
+    command: ["python", "collectors/meshlink_agent.py", "--config", "/config/meshlink_agent.yaml"]
+    volumes:
+      - ./config/meshlink_agent.yaml:/config/meshlink_agent.yaml:ro
+    env_file:
+      - backend/.env
+    environment:
+      HOMENETIQ_BACKEND_URL: http://backend:8080
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  homenetiq-data:

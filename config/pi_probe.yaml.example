@@ -1,8 +1,8 @@
 device:
-  id: "raspberry-pi"
-  name: "Raspberry Pi Backend Probe"
+  id: "network-probe-1"
+  name: "Network probe"
   type: "network_probe"
-  os: "raspberry-pi-os"
+  os: "linux"
   agent_version: "1.0.0"
 
 backend:
@@ -19,10 +19,10 @@ privacy:
   salt: ""
 
 targets:
-  gateway_ip: "192.168.1.1"
-  ap_ip: "192.168.1.103"
+  gateway_ip: ""      # your router LAN IP
+  ap_ip: ""           # optional AP management IP
   internet_ip: "1.1.1.1"
   dns_domains:
     - "google.com"
     - "github.com"
-    - "openai.com"
+    - "cloudflare.com"

@@ -49,15 +49,21 @@ anlaşılır rapor üretmek.
 
 ## API yüzeyi
 
+GET `/health` kimlik doğrulamasızdır. Diğer GET veri uçları
+`HOMENETIQ_REQUIRE_GET_AUTH=true` (varsayılan) iken Bearer ister.
+`POST /api/v1/metrics` her zaman token ister. `/api/v1/mesh/pubkey`
+API token veya `HOMENETIQ_ENROLL_TOKEN` ister.
+
 | Method | Path | Auth |
 |---|---|---|
 | GET  | `/health` | - |
 | POST | `/api/v1/metrics` | Bearer token |
-| GET  | `/api/v1/metrics/latest` | - |
-| GET  | `/api/v1/devices` | - |
-| GET  | `/api/v1/devices/{device_id}/latest` | - |
-| GET  | `/api/v1/summary` | - |
-| GET  | `/api/v1/anomalies` | - |
+| GET  | `/api/v1/metrics/latest` | Bearer (varsayılan) |
+| GET  | `/api/v1/devices` | Bearer (varsayılan) |
+| GET  | `/api/v1/devices/{device_id}/latest` | Bearer (varsayılan) |
+| GET  | `/api/v1/summary` | Bearer (varsayılan) |
+| GET  | `/api/v1/anomalies` | Bearer (varsayılan) |
+| GET  | `/api/v1/mesh/pubkey` | Bearer veya enroll token |
 
-GET'ler açıktır çünkü dashboard aynı makinede çalışır ve sadece LAN
-üzerinden erişilir. Public internete açılmamalıdır.
+Backend'i public internete açmayın. LAN için uvicorn `127.0.0.1` dinlesin,
+önüne Caddy koyun (`contrib/Caddyfile`).

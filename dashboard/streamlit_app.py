@@ -35,7 +35,7 @@ def main() -> None:
         labels = [f"{icon}  {name}" for name, icon, _ in PAGES]
         choice = st.radio("", labels, label_visibility="collapsed")
         st.divider()
-        st.caption("v1.0.0 — Raspberry Pi friendly")
+        st.caption("local telemetry — any Linux/macOS host (Pi optional)")
 
     for name, _icon, render in PAGES:
         if choice.endswith(name):

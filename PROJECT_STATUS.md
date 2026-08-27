@@ -1,6 +1,6 @@
 # PROJECT_STATUS
 
-**HomeNetIQ v1.0.0 — release candidate**
+**HomeNetIQ v1.1-dev**
 
 ## Goal
 
@@ -35,7 +35,7 @@ system that runs on the local network. v1 scope:
 - ✅ Recommendation engine (English; Turkish in docs)
 - ✅ 4 agents (Kali, macOS, Pi, meshlink health) — canonical payload + privacy
 - ✅ Dashboard (9 pages, empty-data safe)
-- ✅ 100 tests (100% green)
+- ✅ pytest suite (see `make test`)
 - ✅ systemd units + GitHub Actions CI
 - ✅ docs/ (ARCHITECTURE, QUALITY_ENGINE, AGENTS, METRIC_CONTRACT, DASHBOARD, SETUP_*, TROUBLESHOOTING) + docs/tr/ for Turkish
 - ✅ Makefile (test, run-backend, run-dashboard, kali-once, pi-probe-once)
@@ -103,10 +103,10 @@ Shipped after the v1.0.0 tag (see `docs/MESH_INTEGRATION.md`):
 
 ## Release order
 
-1. Mac mini: development + tests (here)
+1. Dev host: development + tests (here)
 2. Push to GitHub
 3. Raspberry Pi: clone, install, enable systemd
-4. Kali MacBook Air: clone, install, enable systemd
+4. Linux Wi-Fi probe: clone, install, enable systemd
 5. (Optional) macOS: launchd or manual
 
 Details: `RELEASE_READINESS_REPORT.md`.

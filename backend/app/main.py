@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 
 from .database import (
     init_db,
@@ -16,8 +16,10 @@ from .database import (
 from .models import MetricIn, StoreResponse
 from .notifier import detect_transitions, send_notification
 from .quality import classify_quality
+from .ratelimit import check_ingest_rate
 from .recommendations import recommend
 from .root_cause import classify_root_cause
+from .security import assert_secure_token, enroll_token
 from .settings import settings
 
 
@@ -30,6 +32,7 @@ async def lifespan(app: FastAPI):
     both for normal runs and inside the `TestClient` context manager.
     """
 
+    assert_secure_token(settings.api_token)
     init_db()
     yield
 
@@ -37,7 +40,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="HomeNetIQ Backend",
     description="Home network and Wi-Fi telemetry backend API",
-    version="1.0.0",
+    version="1.1.0-dev",
     lifespan=lifespan,
 )
 
@@ -58,6 +61,19 @@ def maybe_token(authorization: str | None = Header(default=None)) -> None:
         _check_token(authorization)
 
 
+def mesh_pubkey_guard(authorization: str | None = Header(default=None)) -> None:
+    """API token or a dedicated enrollment token. Pubkey is a pin, not membership."""
+    expected_enroll = enroll_token()
+    if expected_enroll and authorization == f"Bearer {expected_enroll}":
+        return
+    _check_token(authorization)
+
+
+def ingest_rate_limit(request: Request, authorization: str | None = Header(default=None)) -> None:
+    host = request.client.host if request.client else "unknown"
+    check_ingest_rate(host, authorization)
+
+
 def _check_token(authorization: str | None) -> None:
     if not settings.require_auth:
         return
@@ -71,21 +87,25 @@ def health():
     return {"status": "ok", "service": "homenetiq-backend"}
 
 
-@app.get("/api/v1/mesh/pubkey")
+@app.get("/api/v1/mesh/pubkey", dependencies=[Depends(mesh_pubkey_guard)])
 def mesh_pubkey():
     """Serve the local meshlink coordinator's public key for LAN enrollment.
 
-    Used by `scripts/join.sh` on client devices so they don't have to copy
-    the key by hand. A public key is a *pinned identity*, not a secret —
-    but note that serving it over plain HTTP means enrollment trusts the
-    LAN at first use (TOFU). See docs/MESH_INTEGRATION.md.
+    This is a *pinned identity*, not mesh membership. Joining still requires
+    a meshlink preauth token when the coordinator was started with `-preauth`.
+    Serving the pin over HTTP is trust-on-first-use — use HTTPS (see
+    contrib/Caddyfile) or copy the hex by hand on an untrusted network.
     """
     if not settings.mesh_pubkey:
         raise HTTPException(status_code=404, detail="mesh pubkey not configured")
     return {"coord_pubkey": settings.mesh_pubkey}
 
 
-@app.post("/api/v1/metrics", response_model=StoreResponse, dependencies=[Depends(require_token)])
+@app.post(
+    "/api/v1/metrics",
+    response_model=StoreResponse,
+    dependencies=[Depends(require_token), Depends(ingest_rate_limit)],
+)
 def ingest_metric(metric: MetricIn):
     collected_at = metric.normalized_collected_at()
 
@@ -161,7 +181,7 @@ def get_mesh_events(limit: int = 50):
     return list_mesh_events(limit=limit)
 
 
-@app.get("/api/v1/settings")
+@app.get("/api/v1/settings", dependencies=[Depends(maybe_token)])
 def get_settings_view():
     """Operational settings as seen by the backend (secrets omitted)."""
     return {

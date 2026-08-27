@@ -499,15 +499,15 @@ def render_about() -> None:
         It measures network latency, Wi-Fi signal quality and likely root
         causes for problems.
 
-        ### Supported devices
-        - Raspberry Pi (backend + network probe)
-        - Kali Linux MacBook Air (Wi-Fi probe)
-        - macOS Mac mini (optional Wi-Fi probe)
-        - TP-Link TL-WR850N (lab AP)
+        ### Supported roles
+        - Backend host (Linux) + optional network probe
+        - Linux Wi-Fi probe (`iw`)
+        - macOS Wi-Fi probe (optional)
+        - Your own router/AP (configure `targets` yourself)
 
         ### Backend connection
         - Backend URL: `HOMENETIQ_BACKEND_URL` (default `http://127.0.0.1:8080`)
-        - API token: `HOMENETIQ_API_TOKEN` (optional — GET endpoints do not require auth)
+        - API token: `HOMENETIQ_API_TOKEN` (**required** for dashboard reads; GET auth is on by default)
         - Currently connected to: `{get_backend_url()}`
         """
     )

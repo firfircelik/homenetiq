@@ -12,21 +12,22 @@ Cause: backend is not running, or it's on a different host:port.
 Check:
 
 ```bash
-# On the Pi
+# On the backend host
 sudo systemctl status homenetiq-backend
 # or run manually
-.venv/bin/uvicorn backend.app.main:app --host 0.0.0.0 --port 8080
+.venv/bin/uvicorn backend.app.main:app --host 127.0.0.1 --port 8080
 ```
 
 On the dashboard side, is `HOMENETIQ_BACKEND_URL` correct?
 
 ```bash
-export HOMENETIQ_BACKEND_URL="http://192.168.1.50:8080"
+export HOMENETIQ_BACKEND_URL="http://YOUR_BACKEND_HOST:8080"
 ```
 
 ### 401 Unauthorized
 
-`POST /api/v1/metrics` requires a Bearer token.
+GET data endpoints and `POST /api/v1/metrics` require a Bearer token
+(`HOMENETIQ_REQUIRE_GET_AUTH` defaults on).
 
 ```bash
 curl -X POST http://127.0.0.1:8080/api/v1/metrics \
@@ -76,7 +77,7 @@ sudo journalctl -u homenetiq-backend -n 50 --no-pager
 Run it manually to get a traceback:
 
 ```bash
-cd /home/pi/homenetiq
+cd /home/YOUR_USER/homenetiq
 HOMENETIQ_API_TOKEN=test-tok python3 -m uvicorn backend.app.main:app
 ```
 
@@ -122,12 +123,12 @@ The agent can't reach the backend. Check:
 
 ```bash
 # From the agent device (Kali, macOS, Pi)
-curl http://192.168.1.50:8080/health
+curl http://YOUR_BACKEND_HOST:8080/health
 ```
 
 If you don't get a response:
 
-- Is the Pi on? `ping 192.168.1.50`
+- Is the Pi on? `ping YOUR_BACKEND_HOST`
 - Did the Pi firewall block 8080? `sudo ufw allow 8080`
 - Is the backend still running? `systemctl status homenetiq-backend`
 - Wrong IP: check `HOMENETIQ_BACKEND_URL` or `backend.url` in config.
@@ -155,7 +156,7 @@ The agent retries after `retry_delay_seconds`.
 Is `HOMENETIQ_BACKEND_URL` correct? Start manually:
 
 ```bash
-HOMENETIQ_BACKEND_URL=http://192.168.1.50:8080 \
+HOMENETIQ_BACKEND_URL=http://YOUR_BACKEND_HOST:8080 \
   python3 -m streamlit run dashboard/streamlit_app.py
 ```
 
@@ -185,9 +186,9 @@ sudo systemctl list-unit-files | grep homenetiq
 
 ```bash
 # On the Pi
-ls -la /home/pi/homenetiq/.venv/bin/uvicorn
+ls -la /home/YOUR_USER/homenetiq/.venv/bin/uvicorn
 # or
-ls -la /home/pi/homenetiq/.venv/bin/python
+ls -la /home/YOUR_USER/homenetiq/.venv/bin/python
 ```
 
 The path in the unit's `ExecStart` must match.
@@ -197,8 +198,8 @@ The path in the unit's `ExecStart` must match.
 Verify the `EnvironmentFile` is readable by the user:
 
 ```bash
-ls -l /home/pi/homenetiq/backend/.env
-chmod 600 /home/pi/homenetiq/backend/.env
+ls -l /home/YOUR_USER/homenetiq/backend/.env
+chmod 600 /home/YOUR_USER/homenetiq/backend/.env
 ```
 
 ### Service in a restart loop
@@ -213,7 +214,7 @@ A repeated exception usually means a config error or a DB permission
 issue. Run manually:
 
 ```bash
-cd /home/pi/homenetiq
+cd /home/YOUR_USER/homenetiq
 HOMENETIQ_API_TOKEN=test-tok python3 -m uvicorn backend.app.main:app
 ```
 

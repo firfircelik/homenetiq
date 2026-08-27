@@ -1,7 +1,7 @@
 # macOS Wi-Fi Agent Setup
 
 This document describes how to install the HomeNetIQ Wi-Fi agent on a
-macOS Mac mini (or any other Mac). **It only collects telemetry from
+macOS host (or any other Mac). **It only collects telemetry from
 your own device on your own network.**
 
 ## 1. Prerequisites
@@ -42,9 +42,9 @@ Fields to edit (same schema as the Kali agent):
 
 | Field | Example |
 |---|---|
-| `device.id` | `"mac-mini-wifi"` |
-| `device.name` | `"Mac mini Wi-Fi Probe"` |
-| `backend.url` | `"http://192.168.1.50:8080/api/v1/metrics"` |
+| `device.id` | `"macos-wifi-1"` |
+| `device.name` | `"macOS Wi-Fi probe"` |
+| `backend.url` | `"http://YOUR_BACKEND_HOST:8080/api/v1/metrics"` |
 | `backend.token` | The `HOMENETIQ_API_TOKEN` from the Pi |
 | `privacy.mode` | `"redact"` (recommended) |
 | `targets.gateway_ip` | Router LAN IP |

@@ -120,23 +120,23 @@ git push origin v1.0.0
 ## Real device deployment order
 
 ```
-Mac mini (dev) ✅
+Dev host ✅
    ↓ git push
 GitHub repo (tag: v1.0.0)
    ↓ git clone
    ├──► Raspberry Pi   (backend + pi probe + dashboard)
-   ├──► Kali MB Air    (Wi-Fi agent)
-   └──► Mac mini       (optional macOS Wi-Fi agent)
+   ├──► Linux Wi-Fi host    (Wi-Fi agent)
+   └──► macOS host       (optional macOS Wi-Fi agent)
 ```
 
 Steps:
 
-1. **Mac mini (development)** — `pytest tests/ -v` ✅ 91 passed (here)
+1. **macOS host (development)** — `pytest tests/ -v` ✅ 91 passed (here)
 2. **Push to GitHub** — `git push origin main && git push origin v1.0.0`
 3. **Raspberry Pi** — `docs/SETUP_RASPBERRY_PI.md`:
    ```bash
-   git clone https://github.com/<user>/HomeNetIQ.git /home/pi/homenetiq
-   cd /home/pi/homenetiq
+   git clone https://github.com/<user>/HomeNetIQ.git /home/YOUR_USER/homenetiq
+   cd /home/YOUR_USER/homenetiq
    make install
    cp config/backend.env.example backend/.env
    # Edit .env and replace HOMENETIQ_API_TOKEN
@@ -149,7 +149,7 @@ Steps:
    sudo systemctl enable --now homenetiq-backend
    sudo systemctl enable --now homenetiq-pi-probe
    ```
-4. **Kali MacBook Air** — `docs/SETUP_KALI_AGENT.md`:
+4. **Linux Wi-Fi probe** — `docs/SETUP_KALI_AGENT.md`:
    ```bash
    git clone https://github.com/<user>/HomeNetIQ.git ~/homenetiq
    cd ~/homenetiq
@@ -161,7 +161,7 @@ Steps:
    sudo cp systemd/homenetiq-kali-agent.service /etc/systemd/system/
    sudo systemctl enable --now homenetiq-kali-agent
    ```
-5. **(Optional) Mac mini Wi-Fi agent** — `docs/SETUP_MACOS_AGENT.md`:
+5. **(Optional) macOS host Wi-Fi agent** — `docs/SETUP_MACOS_AGENT.md`:
    ```bash
    make macos-once
    # launchd plist (not in repo; write your own)

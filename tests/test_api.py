@@ -13,6 +13,8 @@ import importlib
 import pytest
 from fastapi.testclient import TestClient
 
+AUTH = {"Authorization": "Bearer test-token"}
+
 
 @pytest.fixture
 def app():
@@ -91,7 +93,7 @@ def test_post_then_get_devices_lists_device(app):
     }
     with _client(app) as c:
         c.post("/api/v1/metrics", json=payload, headers={"Authorization": "Bearer test-token"})
-        r = c.get("/api/v1/devices")
+        r = c.get("/api/v1/devices", headers=AUTH)
         assert r.status_code == 200
         devices = r.json()
         assert len(devices) == 1
@@ -108,7 +110,7 @@ def test_post_then_get_latest_metrics_returns_inserted_row(app):
     }
     with _client(app) as c:
         c.post("/api/v1/metrics", json=payload, headers={"Authorization": "Bearer test-token"})
-        r = c.get("/api/v1/metrics/latest")
+        r = c.get("/api/v1/metrics/latest", headers=AUTH)
         assert r.status_code == 200
         rows = r.json()
         assert len(rows) == 1

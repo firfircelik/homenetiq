@@ -26,7 +26,14 @@ agent status --json ──stdout JSON──▶ collectors/meshlink_agent.py
                                     POST /api/v1/metrics ──▶ quality engine ──▶ dashboard
 ```
 
-The collector only *reads* meshlink status; it never configures the mesh.
+The collector only *reads* meshlink status; it never configures or operates
+the mesh. Coordinator, relay and membership stay in meshlink. HomeNetIQ
+pins `schema_version` (see `docs/MESH_STATUS.schema.json`): unknown **major**
+is a hard error; extra fields on a known major are ignored.
+
+`GET /api/v1/mesh/pubkey` is a coordinator **pin** for enrollment UX, not
+membership. Joining requires meshlink `--preauth` when the coordinator was
+started with `-preauth`.
 
 ## Setup
 
@@ -51,6 +58,7 @@ Key config fields (`meshlink:` section):
 | `name` / `keyfile` | this device's mesh identity |
 | `coordinator` / `coord_pubkey` | control-plane address + pinned key |
 | `probe_peer` | optional: ping this peer before snapshotting so the report contains a real path/RTT |
+| `preauth` | meshlink enrollment token (required when the coordinator has `-preauth`) |
 
 > The installer captures `coord_pubkey` from a coordinator started with the
 > **persistent** keyfile `data/coordinator.key`. Run your real coordinator
@@ -82,14 +90,12 @@ ends (TUN device creation).
 On the second device:
 
 ```sh
-./scripts/join.sh <HOST_IP> [name]
+HOMENETIQ_API_TOKEN=... MESHLINK_PREAUTH=... ./scripts/join.sh <HOST_IP> [name]
 ```
 
 The script pulls the pinned coordinator public key from the host backend
-(`GET /api/v1/mesh/pubkey`, served via `HOMENETIQ_MESH_PUBKEY` which
-`run-all.sh` sets automatically) and starts the agent. Note: fetching the
-key over plain HTTP is trust-on-first-use on the LAN — fine for home use;
-for hostile networks copy the key manually instead.
+(`GET /api/v1/mesh/pubkey`, Bearer token required) and starts the agent
+with `--preauth`. The pubkey is an identity pin, not a join credential.
 
 ## Notes
 

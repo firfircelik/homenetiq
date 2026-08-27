@@ -7,7 +7,7 @@
 - Raspberry Pi OS Bookworm veya benzeri
 - Python 3.11 veya 3.12
 - İnternet erişimi (ilk pip install için)
-- LAN'da sabit IP veya DHCP reservation (ör. `192.168.1.50`)
+- LAN'da sabit IP veya DHCP reservation (ör. `YOUR_BACKEND_HOST`)
 - Boş port 8080 (backend) ve 8501 (dashboard)
 
 ## 2. Kullanıcı ve dizin
@@ -15,8 +15,8 @@
 ```bash
 sudo useradd -m -s /bin/bash pi    # Pi OS'da zaten var
 sudo -iu pi
-git clone https://github.com/<user>/HomeNetIQ.git /home/pi/homenetiq
-cd /home/pi/homenetiq
+git clone https://github.com/<user>/HomeNetIQ.git /home/YOUR_USER/homenetiq
+cd /home/YOUR_USER/homenetiq
 ```
 
 > systemd unit'leri şablondur. Önce `User=`, `WorkingDirectory=`,
@@ -25,7 +25,7 @@ cd /home/pi/homenetiq
 ## 3. Sanal ortam
 
 ```bash
-cd /home/pi/homenetiq
+cd /home/YOUR_USER/homenetiq
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r backend/requirements.txt
@@ -39,7 +39,7 @@ nano backend/.env
 ```
 
 ```
-HOMENETIQ_DB_PATH=/home/pi/homenetiq/data/homenetiq.sqlite3
+HOMENETIQ_DB_PATH=/home/YOUR_USER/homenetiq/data/homenetiq.sqlite3
 HOMENETIQ_API_TOKEN=<openssl rand -hex 32>
 HOMENETIQ_REQUIRE_AUTH=true
 HOMENETIQ_STALE_AFTER_SECONDS=120
@@ -85,7 +85,7 @@ sudo systemctl status homenetiq-backend --no-pager
 ## 8. Dashboard'u LAN'a aç (opsiyonel)
 
 ```bash
-HOMENETIQ_BACKEND_URL=http://192.168.1.50:8080 \
+HOMENETIQ_BACKEND_URL=http://YOUR_BACKEND_HOST:8080 \
 nohup .venv/bin/streamlit run dashboard/streamlit_app.py \
   --server.address 0.0.0.0 --server.port 8501 \
   > logs/dashboard.log 2>&1 &
@@ -107,7 +107,7 @@ Bkz. `docs/tr/TROUBLESHOOTING.tr.md`.
 ## 11. Yükseltme
 
 ```bash
-cd /home/pi/homenetiq
+cd /home/YOUR_USER/homenetiq
 git pull
 source .venv/bin/activate
 pip install -r backend/requirements.txt

@@ -19,7 +19,7 @@ import unittest.mock as mock
 
 SAMPLE_IW_LINK = """\
 Connected to 00:11:22:33:44:55 (on wlan0)
-\tSSID: HomeNetIQ-Lab
+\tSSID: YOUR_SSID
 \tfreq: 5180
 \tsignal: -47 dBm
 \ttx bitrate: 433.3 MBit/s
@@ -33,7 +33,7 @@ Connected to 00:11:22:33:44:55 (on wlan0)
 def test_parse_iw_link_extracts_all_fields():
     parsed = kali_wifi_agent.parse_iw_link(SAMPLE_IW_LINK)
     assert parsed["bssid"] == "00:11:22:33:44:55"
-    assert parsed["ssid"] == "HomeNetIQ-Lab"
+    assert parsed["ssid"] == "YOUR_SSID"
     assert parsed["freq"] == 5180
     assert parsed["signal"] == -47
     assert parsed["tx_bitrate"] == 433.3
@@ -68,7 +68,7 @@ def test_freq_to_channel_common():
 
 def test_payload_iw_link_canonical_fields():
     payload = kali_wifi_agent.payload_iw_link(SAMPLE_IW_LINK)
-    assert payload["ssid"] == "HomeNetIQ-Lab"
+    assert payload["ssid"] == "YOUR_SSID"
     assert payload["frequency_mhz"] == 5180
     assert payload["band"] == "5GHz"
     assert payload["channel"] == 36
@@ -101,7 +101,7 @@ Wi-Fi:
         CoreWLAN: ...
         CoreWLANKit: ...
     Current Network Information:
-        HomeNetIQ-Lab:
+        YOUR_SSID:
             PHY Mode: 802.11ax
             Channel: 36
             Network Type: 5 GHz
@@ -115,7 +115,7 @@ Wi-Fi:
 
 def test_parse_macos_extracts_signal_snr_band_channel():
     parsed = macos_wifi_agent.parse_system_profiler(SAMPLE_MACOS)
-    assert parsed["ssid"] == "HomeNetIQ-Lab"
+    assert parsed["ssid"] == "YOUR_SSID"
     assert parsed["channel"] == 36
     assert parsed["band"] == "5GHz"
     assert parsed["rssi"] == -47
@@ -193,5 +193,15 @@ def test_ping_stats_handles_timeout(monkeypatch):
         raise subprocess.TimeoutExpired(["ping"], 1)
     monkeypatch.setattr("agents.ping.subprocess.run", fake_run)
     result = ping_stats("127.0.0.1", count=1, timeout=1)
+    assert result["avg_ms"] is None
+    assert result["packet_loss_percent"] == 100.0
+
+
+def test_ping_stats_blank_target_does_not_run_ping(monkeypatch):
+    def fake_run(*args, **kwargs):
+        raise AssertionError("ping must not run for a blank target")
+
+    monkeypatch.setattr("agents.ping.subprocess.run", fake_run)
+    result = ping_stats("", count=1, timeout=1)
     assert result["avg_ms"] is None
     assert result["packet_loss_percent"] == 100.0

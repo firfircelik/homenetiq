@@ -10,6 +10,7 @@ import requests
 from agents.config_loader import (
     AgentConfig,
     ConfigError,
+    empty_required_targets,
     load_agent_config,
     load_yaml_config,
 )
@@ -204,8 +205,8 @@ privacy:
   mode: hash
   salt: my-salt
 targets:
-  gateway_ip: 192.168.1.1
-  ap_ip: 192.168.1.103
+  gateway_ip: 192.0.2.1
+  ap_ip: 192.0.2.30
   internet_ip: 1.1.1.1
 """)
     cfg = load_agent_config(p)
@@ -214,7 +215,7 @@ targets:
     assert cfg.timeout_seconds == 7
     assert cfg.privacy_mode == "hash"
     assert cfg.privacy_salt == "my-salt"
-    assert cfg.extra["targets"]["gateway_ip"] == "192.168.1.1"
+    assert cfg.extra["targets"]["gateway_ip"] == "192.0.2.1"
 
 
 def test_agent_config_backend_headers_includes_authorization():
@@ -236,3 +237,11 @@ def test_agent_config_backend_headers_no_token_means_no_auth():
     )
     h = cfg.backend_headers()
     assert "Authorization" not in h
+
+
+def test_empty_required_targets_fails_loud_on_blank_gateway():
+    assert empty_required_targets({"gateway_ip": "", "internet_ip": "1.1.1.1"}) == ["gateway_ip"]
+    assert empty_required_targets({"gateway_ip": "192.0.2.1", "internet_ip": "1.1.1.1"}) == []
+    assert empty_required_targets({}) == ["gateway_ip", "internet_ip"]
+    # ap_ip may be empty; it is not required
+    assert empty_required_targets({"gateway_ip": "192.0.2.1", "ap_ip": "", "internet_ip": "1.1.1.1"}) == []

@@ -2,7 +2,7 @@
 
 **Tüm Kodlar, Mantık, Mimari ve Çalıştırma Rehberi**
 
-_Raspberry Pi backend + Kali Linux Wi-Fi probe + TP-Link lab access point_
+_Self-hosted backend + Wi-Fi probe + your own access point_
 
 Hazırlanma tarihi: 11.06.2026
 
@@ -44,15 +44,15 @@ Bu projede cihazların rolleri net ayrılır. Karmaşayı azaltmak için her cih
 
 | **Cihaz**                     | **Rol**                             | **Nerede?**         | **Görevi**                                                                     |
 | ----------------------------- | ----------------------------------- | ------------------- | ------------------------------------------------------------------------------ |
-| Ana modem/router              | Gateway                             | 192.168.1.1         | İnternet çıkışı ve ana ağ geçidi.                                              |
-| TP-Link TL-WR850N v3          | Lab Access Point                    | 192.168.1.103       | HomeNetIQ-Lab Wi-Fi ağını yayınlar. DHCP kapalı kalır.                         |
+| Ana modem/router              | Gateway                             | YOUR_GATEWAY_IP         | İnternet çıkışı ve ana ağ geçidi.                                              |
+| your access point          | Lab Access Point                    | YOUR_AP_IP       | YOUR_SSID Wi-Fi ağını yayınlar. DHCP kapalı kalır.                         |
 | Raspberry Pi                  | Backend + network probe             | Ethernet            | FastAPI backend, SQLite DB, network ölçümleri, dashboard.                      |
-| MacBook Air 2015 / Kali Linux | Wi-Fi probe                         | Wi-Fi               | TP-Link ağına bağlanır, Wi-Fi metriklerini toplar ve Pi backend'e gönderir.    |
-| Mac mini                      | Opsiyonel probe / geliştirme cihazı | Wi-Fi veya ethernet | İkinci probe, dashboard client veya geliştirme makinesi olarak kullanılabilir. |
+| Linux Wi-Fi probe | Wi-Fi probe                         | Wi-Fi               | Wi-Fi ağına bağlanır, Wi-Fi metriklerini toplar ve Pi backend'e gönderir.    |
+| macOS host                      | Opsiyonel probe / geliştirme cihazı | Wi-Fi veya ethernet | İkinci probe, dashboard client veya geliştirme makinesi olarak kullanılabilir. |
 
 **Ağ topolojisi**
 
-Ana Modem / Gateway: 192.168.1.1
+Ana Modem / Gateway: YOUR_GATEWAY_IP
 
 |
 
@@ -60,9 +60,9 @@ Ana Modem / Gateway: 192.168.1.1
 
 v
 
-TP-Link TL-WR850N v3: 192.168.1.103
+your access point: YOUR_AP_IP
 
-SSID: HomeNetIQ-Lab, DHCP: Kapalı
+SSID: YOUR_SSID, DHCP: Kapalı
 
 |
 
@@ -70,7 +70,7 @@ SSID: HomeNetIQ-Lab, DHCP: Kapalı
 
 v
 
-Kali MacBook Air Wi-Fi Probe
+Linux Wi-Fi probe Wi-Fi Probe
 
 |
 
@@ -84,7 +84,7 @@ FastAPI + SQLite + Quality Engine + Dashboard
 
 ## Neden Raspberry Pi var?
 
-Tek MacBook veya tek Mac mini ile de ölçüm yapılabilir. Ancak Raspberry Pi projeyi "tek cihazda çalışan script" olmaktan çıkarıp gerçek bir telemetry backend mimarisine yaklaştırır.
+Tek bir laptop ile de ölçüm yapılabilir. Ancak Raspberry Pi projeyi "tek cihazda çalışan script" olmaktan çıkarıp gerçek bir telemetry backend mimarisine yaklaştırır.
 
 | **Sebep**      | **Açıklama**                                                                          |
 | -------------- | ------------------------------------------------------------------------------------- |
@@ -100,9 +100,9 @@ Tek MacBook veya tek Mac mini ile de ölçüm yapılabilir. Ancak Raspberry Pi p
 | Backend API          | Raspberry Pi                | Python + FastAPI    | Metrik kabul eder, cihazları kaydeder, DB'ye yazar, summary/anomaly endpointleri sunar. |
 | SQLite DB            | Raspberry Pi                | SQLite              | Cihaz ve metrik kayıtlarını tutar.                                                      |
 | Quality Engine       | Raspberry Pi backend içinde | Python              | Payload'a göre quality, issues ve root_cause üretir.                                    |
-| Kali Wi-Fi Collector | Kali MacBook Air            | Python + iw + ping  | Wi-Fi metrikleri, latency ve packet loss toplar; backend'e gönderir.                    |
+| Kali Wi-Fi Collector | Linux Wi-Fi probe            | Python + iw + ping  | Wi-Fi metrikleri, latency ve packet loss toplar; backend'e gönderir.                    |
 | Pi Network Probe     | Raspberry Pi                | Python + ping + dig | Gateway/AP/internet/DNS ölçümleri yapar ve backend'e gönderir.                          |
-| Dashboard            | Raspberry Pi veya Mac mini  | Streamlit           | Son metrikleri, cihazları, trendleri ve anomalileri gösterir.                           |
+| Dashboard            | Raspberry Pi veya macOS host  | Streamlit           | Son metrikleri, cihazları, trendleri ve anomalileri gösterir.                           |
 | systemd servisleri   | Raspberry Pi ve Kali        | Linux systemd       | Backend ve collector'ların otomatik başlamasını sağlar.                                 |
 
 # 4\. Dosya Yapısı
@@ -267,9 +267,9 @@ ve payload'dur.
 
 """
 
-device_id: str = Field(..., examples=\["kali-macbook-air"\])
+device_id: str = Field(..., examples=\["linux-wifi-1"\])
 
-device_name: Optional\[str\] = Field(None, examples=\["Kali MacBook Air 2015"\])
+device_name: Optional\[str\] = Field(None, examples=\["Linux Wi-Fi probe"\])
 
 device_type: str = Field(..., examples=\["wifi_probe"\])
 
@@ -975,7 +975,7 @@ APP_HOST=0.0.0.0
 
 APP_PORT=8080
 
-DATABASE_PATH=/home/pi/homenetiq/backend/homenetiq.db
+DATABASE_PATH=/home/YOUR_USER/homenetiq/backend/homenetiq.db
 
 API_TOKEN=dev-token-change-me
 
@@ -993,7 +993,7 @@ curl http://RASPBERRY_PI_IP:8080/health
 
 ## 6.1. Kali üzerinde gerekli paketler
 
-\# Kali MacBook Air üzerinde
+\# Linux Wi-Fi probe üzerinde
 
 sudo apt update
 
@@ -1029,9 +1029,9 @@ iw dev
 
 device:
 
-id: "kali-macbook-air"
+id: "linux-wifi-1"
 
-name: "Kali MacBook Air 2015"
+name: "Linux Wi-Fi probe"
 
 type: "wifi_probe"
 
@@ -1051,9 +1051,9 @@ interval_seconds: 30
 
 targets:
 
-gateway_ip: "192.168.1.1"
+gateway_ip: "YOUR_GATEWAY_IP"
 
-ap_ip: "192.168.1.103"
+ap_ip: "YOUR_AP_IP"
 
 internet_ip: "1.1.1.1"
 
@@ -1101,7 +1101,7 @@ Beklenen örnek:
 
 Connected to aa:bb:cc:dd:ee:ff (on wlan0)
 
-SSID: HomeNetIQ-Lab
+SSID: YOUR_SSID
 
 freq: 2437
 
@@ -1367,7 +1367,7 @@ python collectors/kali_wifi_collector.py
 
 # 7\. Raspberry Pi Network Probe Kodları
 
-Raspberry Pi, ethernet ile bağlı olduğu için kablosuz sinyalden etkilenmeyen referans ölçüm noktasıdır. Bu probe gateway, TP-Link AP, internet ve DNS ölçümü yapar.
+Bu probe kablolu referans ölçüm noktasıdır: gateway, AP, internet ve DNS.
 
 ## 7.1. config/pi-probe.yaml
 
@@ -1393,9 +1393,9 @@ interval_seconds: 30
 
 targets:
 
-gateway_ip: "192.168.1.1"
+gateway_ip: "YOUR_GATEWAY_IP"
 
-ap_ip: "192.168.1.103"
+ap_ip: "YOUR_AP_IP"
 
 internet_ip: "1.1.1.1"
 
@@ -1601,7 +1601,7 @@ main()
 | Packet loss >= 2%         | packet_loss_warning   | Kullanıcı deneyimini bozabilecek paket kaybı var.       |
 | Internet latency > 100 ms | high_internet_latency | WAN/ISP veya upstream problem olabilir.                 |
 | DNS latency > 150 ms      | slow_dns              | Web siteleri geç açılıyor hissi verebilir.              |
-| AP latency > 30 ms        | high_ap_latency       | TP-Link/AP tarafında local problem olabilir.            |
+| AP latency > 30 ms        | high_ap_latency       | AP tarafında local problem olabilir.                    |
 
 **Neden rule-based?:** İlk sürümde ML kullanmak gereksiz karmaşıklık yaratır. Rule-based yaklaşım açıklanabilir, test edilebilir ve ürünün teşhis mantığını net gösterir.
 
@@ -1767,7 +1767,7 @@ st.info("Bu metrik için yeterli veri yok.")
 
 ## 9.3. Dashboard çalıştırma
 
-\# Raspberry Pi veya Mac mini üzerinde
+\# Raspberry Pi veya macOS host üzerinde
 
 cd ~/homenetiq/dashboard
 
@@ -1797,11 +1797,11 @@ Wants=network-online.target
 
 User=pi
 
-WorkingDirectory=/home/pi/homenetiq/backend
+WorkingDirectory=/home/YOUR_USER/homenetiq/backend
 
-Environment="PATH=/home/pi/homenetiq/backend/.venv/bin"
+Environment="PATH=/home/YOUR_USER/homenetiq/backend/.venv/bin"
 
-ExecStart=/home/pi/homenetiq/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8080
+ExecStart=/home/YOUR_USER/homenetiq/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8080
 
 Restart=always
 
@@ -1825,11 +1825,11 @@ Wants=homenetiq-backend.service
 
 User=pi
 
-WorkingDirectory=/home/pi/homenetiq
+WorkingDirectory=/home/YOUR_USER/homenetiq
 
-Environment="PATH=/home/pi/homenetiq/.venv/bin"
+Environment="PATH=/home/YOUR_USER/homenetiq/.venv/bin"
 
-ExecStart=/home/pi/homenetiq/.venv/bin/python /home/pi/homenetiq/collectors/pi_network_probe.py
+ExecStart=/home/YOUR_USER/homenetiq/.venv/bin/python /home/YOUR_USER/homenetiq/collectors/pi_network_probe.py
 
 Restart=always
 
@@ -1851,13 +1851,13 @@ Wants=network-online.target
 
 \[Service\]
 
-User=firat
+User=YOUR_USER
 
-WorkingDirectory=/home/firat/homenetiq
+WorkingDirectory=/home/YOUR_USER/homenetiq
 
-Environment="PATH=/home/firat/homenetiq/.venv/bin"
+Environment="PATH=/home/YOUR_USER/homenetiq/.venv/bin"
 
-ExecStart=/home/firat/homenetiq/.venv/bin/python /home/firat/homenetiq/collectors/kali_wifi_collector.py
+ExecStart=/home/YOUR_USER/homenetiq/.venv/bin/python /home/YOUR_USER/homenetiq/collectors/kali_wifi_collector.py
 
 Restart=always
 
@@ -1911,11 +1911,11 @@ sudo systemctl status homenetiq-kali-agent
 | --------------------- | ----------------------------- | ------------------------------------------- |
 | Backend health        | curl http://PI_IP:8080/health | status ok dönmeli.                          |
 | Manuel metric POST    | scripts/test_post_metric.sh   | metric stored dönmeli.                      |
-| Cihaz listesi         | GET /api/v1/devices           | kali-macbook-air ve raspberry-pi görünmeli. |
+| Cihaz listesi         | GET /api/v1/devices           | linux-wifi-1 ve raspberry-pi görünmeli. |
 | Son metrikler         | GET /api/v1/metrics/latest    | Payload ve quality alanları gelmeli.        |
 | Kali Wi-Fi bağlantısı | iw dev wlan0 link             | Connected, SSID, signal, bitrate görünmeli. |
-| AP ping               | ping 192.168.1.103            | 0% packet loss beklenir.                    |
-| Gateway ping          | ping 192.168.1.1              | Düşük latency beklenir.                     |
+| AP ping               | ping YOUR_AP_IP            | 0% packet loss beklenir.                    |
+| Gateway ping          | ping YOUR_GATEWAY_IP              | Düşük latency beklenir.                     |
 | Internet ping         | ping 1.1.1.1                  | Internet erişimi doğrulanır.                |
 
 ## 11.1. scripts/test_post_metric.sh
@@ -1942,7 +1942,7 @@ curl -X POST "\$BACKEND/api/v1/metrics" -H "Authorization: Bearer \$TOKEN" -H "C
 
 "payload": {
 
-"ssid": "HomeNetIQ-Lab",
+"ssid": "YOUR_SSID",
 
 "band": "2GHz",
 
@@ -2101,11 +2101,11 @@ ORDER BY (device_id, collected_at);
 
 | **Sıra** | **Nerede?**      | **Ne Yapılacak?**                                                      |
 | -------- | ---------------- | ---------------------------------------------------------------------- |
-| 1        | TP-Link          | SSID HomeNetIQ-Lab, DHCP kapalı, IP 192.168.1.103, kanal 6/20MHz.      |
+| 1        | Access point     | SSID YOUR_SSID, DHCP kapalı, IP YOUR_AP_IP, kanal 6/20MHz.      |
 | 2        | Raspberry Pi     | Backend kurulacak ve uvicorn ile 8080 portunda başlatılacak.           |
 | 3        | Raspberry Pi     | Pi network probe çalıştırılacak.                                       |
-| 4        | Kali MacBook Air | HomeNetIQ-Lab ağına bağlanacak, iw dev ile interface bulunacak.        |
-| 5        | Kali MacBook Air | kali-agent.yaml ayarlanacak ve collector başlatılacak.                 |
+| 4        | Linux Wi-Fi probe | YOUR_SSID ağına bağlanacak, iw dev ile interface bulunacak.        |
+| 5        | Linux Wi-Fi probe | kali-agent.yaml ayarlanacak ve collector başlatılacak.                 |
 | 6        | Herhangi cihaz   | http://PI_IP:8080/api/v1/metrics/latest ile veri geldiği doğrulanacak. |
 | 7        | Dashboard        | Streamlit dashboard açılacak ve trendler izlenecek.                    |
 
@@ -2113,4 +2113,4 @@ ORDER BY (device_id, collected_at);
 
 # 15\. Projenin Mantığı Tek Paragrafta
 
-HomeNetIQ'de Raspberry Pi merkezi backend ve kablolu referans probe olarak çalışır. Kali Linux yüklü MacBook Air, TP-Link TL-WR850N tarafından yayınlanan HomeNetIQ-Lab Wi-Fi ağına bağlanır ve iw/ping gibi Linux komutlarıyla Wi-Fi ve network metriklerini toplar. Toplanan veriler HTTP POST ile Raspberry Pi üzerindeki FastAPI backend'e gönderilir. Backend cihazları device_id ile ayırır, metrikleri SQLite veritabanına time-series event olarak kaydeder, rule-based kalite skoru üretir ve root cause sınıflandırması yapar. Streamlit dashboard ise cihazları, son metrikleri, anomalileri ve trendleri gösterir. Böylece sistem yalnızca sinyal gücü ölçmez; Wi-Fi, local network, DNS ve WAN/ISP sorunlarını ayırmaya çalışan küçük bir ev ağı intelligence platformuna dönüşür.
+HomeNetIQ'de Raspberry Pi merkezi backend ve kablolu referans probe olarak çalışır. Linux Wi-Fi probe, your access point tarafından yayınlanan YOUR_SSID Wi-Fi ağına bağlanır ve iw/ping gibi Linux komutlarıyla Wi-Fi ve network metriklerini toplar. Toplanan veriler HTTP POST ile Raspberry Pi üzerindeki FastAPI backend'e gönderilir. Backend cihazları device_id ile ayırır, metrikleri SQLite veritabanına time-series event olarak kaydeder, rule-based kalite skoru üretir ve root cause sınıflandırması yapar. Streamlit dashboard ise cihazları, son metrikleri, anomalileri ve trendleri gösterir. Böylece sistem yalnızca sinyal gücü ölçmez; Wi-Fi, local network, DNS ve WAN/ISP sorunlarını ayırmaya çalışan küçük bir ev ağı intelligence platformuna dönüşür.

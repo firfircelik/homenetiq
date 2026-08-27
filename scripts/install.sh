@@ -13,7 +13,7 @@
 # Ortam değişkenleri:
 #   MESHLINK_REPO   meshlink checkout yolu   (varsayılan: ../network-project)
 #   INSTALL_BIN     binary hedefi            (varsayılan: /usr/local/bin)
-#   COORDINATOR     coordinator adresi       (ör. 192.168.1.113:19200)
+#   COORDINATOR     coordinator adresi       (ör. YOUR_COORDINATOR_HOST:19200)
 #   COORD_PUBKEY    coordinator public key   (64 hex)
 set -euo pipefail
 
@@ -82,10 +82,23 @@ elif [ -d "$MESHLINK_REPO" ] && command -v go >/dev/null 2>&1; then
   log "meshlink kaynaklardan derleniyor ($MESHLINK_REPO) ..."
   (cd "$MESHLINK_REPO" && make build >/dev/null)
   exec "$0"   # derleme sonrası kendini tekrar çalıştır
+elif bash "$REPO_ROOT/scripts/fetch-meshlink.sh" "$REPO_ROOT/data"; then
+  log "GitHub release indirildi → $REPO_ROOT/data/meshlink-agent"
+  MESH_AGENT_BIN="$REPO_ROOT/data/meshlink-agent"
+  if [ -x "$REPO_ROOT/data/meshlink-coordinator" ]; then
+    MESH_COORD_BIN="$REPO_ROOT/data/meshlink-coordinator"
+  fi
+  if [ -w "$INSTALL_BIN" ] || [ "$(id -u)" -eq 0 ]; then
+    cp "$MESH_AGENT_BIN" "$INSTALL_BIN/meshlink-agent"
+  else
+    $SUDO cp "$MESH_AGENT_BIN" "$INSTALL_BIN/meshlink-agent"
+  fi
+  MESH_AGENT_BIN="$INSTALL_BIN/meshlink-agent"
 else
   warn "meshlink binary bulunamadı/derlenemedi."
-  warn "  → git clone https://github.com/firfircelik/network-project && cd network-project && make build"
-  warn "  → sonra tekrar çalıştırın: MESHLINK_REPO=<yol> $0"
+  warn "  → GitHub release: MESHLINK_VERSION=v0.2.0 ./scripts/fetch-meshlink.sh"
+  warn "  → veya: git clone https://github.com/firfircelik/network-project && make build"
+  warn "  → sonra: MESHLINK_REPO=<yol> $0"
 fi
 
 # ---------------------------------------------------------------- 3) Config
@@ -100,13 +113,13 @@ if [ ! -f "$CFG" ]; then
   [ -t 0 ] && INTERACTIVE=1
   if [ -z "$COORDINATOR" ]; then
     if [ "$INTERACTIVE" -eq 1 ]; then
-      read -r -p "Coordinator adresi [192.168.1.50:19200]: " COORDINATOR
+      read -r -p "Coordinator adresi (host:19200): " COORDINATOR
     fi
-    COORDINATOR="${COORDINATOR:-192.168.1.50:19200}"
+    COORDINATOR="${COORDINATOR:-127.0.0.1:19200}"
   fi
   # Public key'i yalnızca coordinator bu makinede çalışacaksa otomatik yakala.
   case "$COORDINATOR" in
-    127.*|localhost:*|""|192.168.1.50:*) AUTO_KEY=1 ;;
+    127.*|localhost:*|"") AUTO_KEY=1 ;;
     *) AUTO_KEY=0 ;;
   esac
   if [ -z "$COORD_PUBKEY" ] && [ "$AUTO_KEY" -eq 1 ] && [ -n "${MESH_COORD_BIN:-}" ]; then
@@ -148,9 +161,9 @@ if [ ! -f "$CFG" ]; then
 import re, sys
 path, coord, pub = sys.argv[1], sys.argv[2], sys.argv[3]
 text = open(path).read()
-text = text.replace("192.168.1.113:19200", coord)
-text = text.replace("192.168.1.113:19201", coord.rsplit(":", 1)[0] + ":19201")
-text = text.replace("192.168.1.113:19205", coord.rsplit(":", 1)[0] + ":19205")
+text = text.replace("YOUR_COORDINATOR_HOST:19200", coord)
+text = text.replace("YOUR_COORDINATOR_HOST:19201", coord.rsplit(":", 1)[0] + ":19201")
+text = text.replace("YOUR_COORDINATOR_HOST:19205", coord.rsplit(":", 1)[0] + ":19205")
 text = text.replace("<coordinator-control-public-key-hex>", pub)
 open(path, "w").write(text)
 print(f"[install] {path} güncellendi")
@@ -175,7 +188,7 @@ if [ -d /etc/systemd/system ]; then
   log "  sudo systemctl enable --now homenetiq-backend homenetiq-mesh-agent"
 else
   warn "systemd bulunamadı (macOS?) — manuel çalıştırma:"
-  warn "  .venv/bin/python -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8080"
+  warn "  .venv/bin/python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8080"
   warn "  .venv/bin/streamlit run dashboard/streamlit_app.py"
   warn "  .venv/bin/python collectors/meshlink_agent.py --config config/meshlink_agent.yaml --once"
 fi

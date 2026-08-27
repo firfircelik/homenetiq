@@ -15,9 +15,10 @@
 # Durdurmak: Ctrl+C (tüm servisler temiz kapanır)
 #
 # Ortam değişkenleri:
-#   MESHLINK_REPO   meshlink checkout yolu   (varsayılan: ../network-project)
+#   MESHLINK_REPO   meshlink checkout yolu   (varsayılan: ../network-project; yoksa GitHub release)
 #   BIND            dinleme adresi           (varsayılan: 127.0.0.1)
-#   HOMENETIQ_API_TOKEN             backend token (varsayılan: change-me-local-token)
+#   HOMENETIQ_API_TOKEN             backend token (yoksa üretilir)
+#   MESH=0          meshlink yığınını atla (yalnız HomeNetIQ pano)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -30,7 +31,16 @@ BIND="${BIND:-127.0.0.1}"
 AGENT_HOST="${AGENT_HOST:-$BIND}"
 [ "$AGENT_HOST" = "0.0.0.0" ] && AGENT_HOST="127.0.0.1"
 URL_HOST="$BIND"; [ "$URL_HOST" = "0.0.0.0" ] && URL_HOST="127.0.0.1"
-TOKEN="${HOMENETIQ_API_TOKEN:-change-me-local-token}"
+TOKEN="${HOMENETIQ_API_TOKEN:-}"
+if [ -z "$TOKEN" ] || [ "$TOKEN" = "change-me-local-token" ]; then
+  if command -v openssl >/dev/null 2>&1; then
+    TOKEN="$(openssl rand -hex 16)"
+  else
+    TOKEN="$(python3 -c 'import secrets; print(secrets.token_hex(16))')"
+  fi
+  warn "üretilmiş oturum token'ı kullanılıyor (kalıcı için HOMENETIQ_API_TOKEN set edin)"
+fi
+MESH="${MESH:-1}"
 DATA="$ROOT/data"
 LOGS="$DATA/logs"
 mkdir -p "$DATA" "$LOGS"
@@ -60,7 +70,9 @@ wait_for(){ # wait_for <açıklama> <max_deneme> <komut...>
 }
 
 # ---------------------------------------------------- 0) Port ön kontrolü
-for port in 8080 8501 19200; do
+ports="8080 8501"
+[ "$MESH" = "1" ] && ports="$ports 19200"
+for port in $ports; do
   if nc -z "$BIND" "$port" 2>/dev/null; then
     die "port $port meşgul görünüyor. Önce eski süreci kapatın: lsof -i :$port"
   fi
@@ -84,32 +96,53 @@ if ! ".venv/bin/python" -c "import fastapi, yaml, requests" >/dev/null 2>&1; the
   ".venv/bin/pip" install -q -r backend/requirements.txt
 fi
 
-# ---------------------------------------------------- 2) meshlink binary
+# ---------------------------------------------------- 2) meshlink (opsiyonel)
 MESH_AGENT=""
 MESH_COORD=""
-if [ -x "$MESHLINK_REPO/bin/agent" ]; then
-  MESH_AGENT="$MESHLINK_REPO/bin/agent"
-  MESH_COORD="$MESHLINK_REPO/bin/coordinator"
-elif command -v meshlink-agent >/dev/null 2>&1 && command -v meshlink-coordinator >/dev/null 2>&1; then
-  MESH_AGENT="$(command -v meshlink-agent)"
-  MESH_COORD="$(command -v meshlink-coordinator)"
-elif [ -d "$MESHLINK_REPO" ] && command -v go >/dev/null 2>&1; then
-  log "meshlink derleniyor ($MESHLINK_REPO) ..."
-  (cd "$MESHLINK_REPO" && make build >/dev/null)
-  MESH_AGENT="$MESHLINK_REPO/bin/agent"
-  MESH_COORD="$MESHLINK_REPO/bin/coordinator"
-else
-  die "meshlink bulunamadı. MESHLINK_REPO=<yol> verin ya da network-project'i yanına klonlayın."
+MESH_RELAY=""
+PREAUTH_FILE="$DATA/preauth.tokens"
+if [ "$MESH" = "1" ]; then
+  if [ -x "$MESHLINK_REPO/bin/agent" ]; then
+    MESH_AGENT="$MESHLINK_REPO/bin/agent"
+    MESH_COORD="$MESHLINK_REPO/bin/coordinator"
+    MESH_RELAY="$MESHLINK_REPO/bin/relay"
+  elif command -v meshlink-agent >/dev/null 2>&1 && command -v meshlink-coordinator >/dev/null 2>&1; then
+    MESH_AGENT="$(command -v meshlink-agent)"
+    MESH_COORD="$(command -v meshlink-coordinator)"
+    MESH_RELAY="$(command -v meshlink-relay || true)"
+  elif [ -d "$MESHLINK_REPO" ] && command -v go >/dev/null 2>&1; then
+    log "meshlink derleniyor ($MESHLINK_REPO) ..."
+    (cd "$MESHLINK_REPO" && make build >/dev/null)
+    MESH_AGENT="$MESHLINK_REPO/bin/agent"
+    MESH_COORD="$MESHLINK_REPO/bin/coordinator"
+    MESH_RELAY="$MESHLINK_REPO/bin/relay"
+  elif bash "$ROOT/scripts/fetch-meshlink.sh" "$DATA"; then
+    MESH_AGENT="$DATA/meshlink-agent"
+    MESH_COORD="$DATA/meshlink-coordinator"
+    MESH_RELAY="$DATA/meshlink-relay"
+  else
+    die "meshlink bulunamadı. MESH=0 ile yalnız pano çalışır, veya MESHLINK_REPO / fetch-meshlink.sh kullanın."
+  fi
+  [ -x "$MESH_COORD" ] || die "meshlink coordinator binary yok"
+  [ -x "$MESH_RELAY" ] || die "meshlink relay binary yok"
+  log "meshlink agent: $MESH_AGENT"
+  if [ ! -f "$PREAUTH_FILE" ]; then
+    if command -v openssl >/dev/null 2>&1; then
+      openssl rand -hex 16 > "$PREAUTH_FILE"
+    else
+      python3 -c 'import secrets; print(secrets.token_hex(16))' > "$PREAUTH_FILE"
+    fi
+    chmod 600 "$PREAUTH_FILE"
+  fi
+  PREAUTH="$(head -1 "$PREAUTH_FILE" | tr -d '\r\n')"
 fi
-log "meshlink agent: $MESH_AGENT"
 
 # ---------------------------------------------------- 3) Config üretimi
 CFG="config/meshlink_agent.yaml"
 COORD_KEYFILE="$DATA/coordinator.key"
-if [ ! -f "$CFG" ]; then
+if [ "$MESH" = "1" ] && [ ! -f "$CFG" ]; then
   log "config/meshlink_agent.yaml üretiliyor ..."
-  # Kalıcı keyfile ile coordinator'ı bir anlığına başlat → pubkey'i yakala.
-  "$MESH_COORD" -ctrl "$BIND:19200" -stun "$BIND:19201" -keyfile "$COORD_KEYFILE" >"$LOGS/keycap.log" 2>&1 &
+  "$MESH_COORD" -ctrl "$BIND:19200" -stun "$BIND:19201" -keyfile "$COORD_KEYFILE" -preauth "$PREAUTH_FILE" >"$LOGS/keycap.log" 2>&1 &
   KPID=$!
   PUB=""
   for _ in $(seq 1 40); do
@@ -152,60 +185,77 @@ meshlink:
   stun: "$AGENT_HOST:19201"
   relay: "$AGENT_HOST:19205"
   probe_peer: "a"
+  preauth: "$PREAUTH"
 EOF
   log "config yazıldı (pubkey: ${PUB:0:16}…)"
-else
+elif [ "$MESH" = "1" ]; then
   log "config zaten var — dokunulmadı."
 fi
 
 # ---------------------------------------------------- 4) Servisler
-log "coordinator başlatılıyor ..."
-launch coordinator "$MESH_COORD" -ctrl "$BIND:19200" -stun "$BIND:19201" -keyfile "$COORD_KEYFILE"
 PUB=""
-for _ in $(seq 1 40); do
-  PUB="$(grep -oE '[0-9a-f]{64}' "$LOGS/coordinator.log" | head -1 || true)"
-  [ -n "$PUB" ] && break
-  sleep 0.25
-done
-[ -n "$PUB" ] || die "coordinator pubkey log'a düşmedi ($LOGS/coordinator.log)"
-log "coordinator ayakta (pubkey ${PUB:0:16}…)"
+if [ "$MESH" = "1" ]; then
+  log "coordinator başlatılıyor ..."
+  launch coordinator "$MESH_COORD" -ctrl "$BIND:19200" -stun "$BIND:19201" -keyfile "$COORD_KEYFILE" -preauth "$PREAUTH_FILE"
+  for _ in $(seq 1 40); do
+    PUB="$(grep -oE '[0-9a-f]{64}' "$LOGS/coordinator.log" | head -1 || true)"
+    [ -n "$PUB" ] && break
+    sleep 0.25
+  done
+  [ -n "$PUB" ] || die "coordinator pubkey log'a düşmedi ($LOGS/coordinator.log)"
+  log "coordinator ayakta (pubkey ${PUB:0:16}…)"
 
-log "relay başlatılıyor ..."
-launch relay "$MESHLINK_REPO/bin/relay" -addr "$BIND:19205"
-sleep 0.4
+  log "relay başlatılıyor ..."
+  launch relay "$MESH_RELAY" -addr "$BIND:19205"
+  sleep 0.4
 
-log "agent a başlatılıyor (kalıcı kimlik: $DATA/key.a) ..."
-launch agenta "$MESH_AGENT" up --name a --keyfile "$DATA/key.a" --data 0.0.0.0:19501 \
-  --coordinator "$AGENT_HOST:19200" --coord-pubkey "$PUB" \
-  --stun "$AGENT_HOST:19201" --relay "$AGENT_HOST:19205"
-# Agent gerçekten kaydolana kadar bekle-kontrol et
-sleep 2
-wait_for "agent a kaydoldu" 20 ps -p "$(pgrep -f 'bin/agent up --name a' | head -1)"
+  log "agent a başlatılıyor (kalıcı kimlik: $DATA/key.a) ..."
+  launch agenta "$MESH_AGENT" up --name a --keyfile "$DATA/key.a" --data 0.0.0.0:19501 \
+    --coordinator "$AGENT_HOST:19200" --coord-pubkey "$PUB" \
+    --stun "$AGENT_HOST:19201" --relay "$AGENT_HOST:19205" \
+    --preauth "$PREAUTH"
+  sleep 2
+  wait_for "agent a kaydoldu" 20 ps -p "$(pgrep -f 'agent up --name a' | head -1)"
+fi
 
 log "backend başlatılıyor ..."
 export HOMENETIQ_API_TOKEN="$TOKEN"
-export HOMENETIQ_MESH_PUBKEY="$PUB"   # LAN'daki client'lar join.sh ile bunu çeker
+export HOMENETIQ_REQUIRE_GET_AUTH="${HOMENETIQ_REQUIRE_GET_AUTH:-true}"
+if [ -n "$PUB" ]; then
+  export HOMENETIQ_MESH_PUBKEY="$PUB"
+fi
 launch backend ".venv/bin/python" -m uvicorn backend.app.main:app --host "$BIND" --port 8080
 wait_for "backend sağlık kontrolü" 30 curl -sf "http://$BIND:8080/health"
 
-log "mesh collector başlatılıyor (30 sn'de bir örnek) ..."
-launch mesh-collector ".venv/bin/python" collectors/meshlink_agent.py --config "$CFG"
+if [ "$MESH" = "1" ]; then
+  log "mesh collector başlatılıyor (30 sn'de bir örnek) ..."
+  launch mesh-collector ".venv/bin/python" collectors/meshlink_agent.py --config "$CFG"
+fi
 
 log "dashboard başlatılıyor ..."
 export HOMENETIQ_BACKEND_URL="http://$BIND:8080"
+export HOMENETIQ_API_TOKEN="$TOKEN"
 launch dashboard ".venv/bin/python" -m streamlit run dashboard/streamlit_app.py \
-  --server.address 0.0.0.0 --server.port 8501 --server.headless true
+  --server.address 127.0.0.1 --server.port 8501 --server.headless true
 sleep 2
 
 # ---------------------------------------------------- 5) Özet
 cat <<EOF
 
 ────────────────────────────────────────────────────────────
- 🟢 HomeNetIQ + meshlink yığını çalışıyor
+ 🟢 HomeNetIQ çalışıyor (mesh: $MESH)
 ────────────────────────────────────────────────────────────
-  Dashboard      : http://localhost:8501        ("🔐 Mesh VPN" sayfası)
+  Dashboard      : http://127.0.0.1:8501
   Backend API    : http://$BIND:8080/health
-  Mesh koordinat.: $BIND:19200  (pinli anahtar: ${PUB:0:16}…)
+  Token          : (HOMENETIQ_API_TOKEN, GET auth açık)
+EOF
+if [ "$MESH" = "1" ]; then
+  cat <<EOF
+  Mesh koordinat.: $BIND:19200  (pin: ${PUB:0:16}…; üyelik preauth)
+  join.sh        : HOMENETIQ_API_TOKEN=… MESHLINK_PREAUTH=$PREAUTH_FILE ./scripts/join.sh $URL_HOST
+EOF
+fi
+cat <<EOF
   Loglar         : $LOGS/
   Durdurmak      : Ctrl+C
 ────────────────────────────────────────────────────────────

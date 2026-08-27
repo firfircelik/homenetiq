@@ -28,7 +28,10 @@ class Settings:
     api_token: str = os.getenv("HOMENETIQ_API_TOKEN", "change-me-local-token")
     require_auth: bool = os.getenv("HOMENETIQ_REQUIRE_AUTH", "true").lower() == "true"
     # When true, data-read GET endpoints also demand the Bearer token.
-    get_auth: bool = os.getenv("HOMENETIQ_REQUIRE_GET_AUTH", "false").lower() == "true"
+    # Default on: even a home LAN is treated as untrusted enough to require
+    # a token. Set HOMENETIQ_REQUIRE_GET_AUTH=false only for a throwaway
+    # local demo (or HOMENETIQ_ALLOW_INSECURE=1).
+    get_auth: bool = os.getenv("HOMENETIQ_REQUIRE_GET_AUTH", "true").lower() == "true"
     stale_after_seconds: int = int(os.getenv("HOMENETIQ_STALE_AFTER_SECONDS", "120"))
     offline_after_seconds: int = int(os.getenv("HOMENETIQ_OFFLINE_AFTER_SECONDS", "600"))
     # meshlink enrollment: coordinator public key served to LAN clients so

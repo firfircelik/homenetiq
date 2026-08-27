@@ -1,12 +1,12 @@
 device:
-  id: "mac-mini-mesh"
-  name: "Mac mini meshlink tunnel"
+  id: "mesh-agent-1"
+  name: "meshlink tunnel health"
   type: "network_probe"
-  os: "macos"
+  os: "linux"
   agent_version: "1.0.0"
 
 backend:
-  url: "http://192.168.1.50:8080/api/v1/metrics"
+  url: "http://YOUR_BACKEND_HOST:8080/api/v1/metrics"
   token: "change-me-local-token"
 
 collector:
@@ -19,17 +19,17 @@ privacy:
   mode: "redact"
   salt: ""
 
-# meshlink (https://github.com/firfircelik/network-project) status snapshot.
-# The agent only READS this snapshot; it never configures the mesh.
+# meshlink status snapshot. This agent only READS it; it never configures the mesh.
 meshlink:
-  bin: "/usr/local/bin/meshlink-agent"  # install.sh bu isimle kurar
-  name: "b"                             # bu cihazin meshlink kimligi
+  bin: "/usr/local/bin/meshlink-agent"  # or the path install.sh uses
+  name: "b"
   keyfile: "/etc/meshlink/key.b"
   data: "0.0.0.0:19502"
-  coordinator: "192.168.1.113:19200"
+  coordinator: "YOUR_COORDINATOR_HOST:19200"
   coord_pubkey: "<coordinator-control-public-key-hex>"
-  stun: "192.168.1.113:19201"
-  relay: "192.168.1.113:19205"
-  # (opsiyonel) Ölçmeden önce bu peer'a 1 ping at: tünel kurulur, status
-  # gerçek path/RTT gösterir. Boşsa sadece snapshot alınır.
+  stun: "YOUR_COORDINATOR_HOST:19201"
+  relay: "YOUR_COORDINATOR_HOST:19205"
+  # Optional: ping this peer once before snapshotting so path/RTT are real.
   probe_peer: "a"
+  # Required when the meshlink coordinator was started with -preauth.
+  preauth: "<YOUR_PREAUTH_TOKEN>"

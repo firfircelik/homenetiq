@@ -1,70 +1,66 @@
-# HomeNetIQ v1.0.0
+# HomeNetIQ
 
 [![CI](https://github.com/firfircelik/homenetiq/actions/workflows/ci.yml/badge.svg)](https://github.com/firfircelik/homenetiq/actions/workflows/ci.yml)
-![Status: Release Candidate](https://img.shields.io/badge/status-release--candidate-blue)
+![Status](https://img.shields.io/badge/status-v1.1--dev-blue)
 ![Python: 3.11 | 3.12](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue)
-![Tests: 110/110](https://img.shields.io/badge/tests-110%2F110-brightgreen)
+![Tests](https://img.shields.io/badge/tests-pytest-brightgreen)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
 HomeNetIQ is a self-hosted network intelligence platform that measures the
-quality of your home network and Wi-Fi connection. It only collects
-telemetry from your own devices on your own network — it is **not a
-Wi-Fi hacking tool, not a neighbor-network scanner, and not an attack
-tool**.
+quality of **your** network and Wi-Fi. It only collects telemetry from devices
+you attach — it is **not a Wi-Fi hacking tool, not a neighbor-network scanner,
+and not an attack tool**. There is no default router, Pi, or AP: you run
+`make init` and fill `targets` yourself.
 
-It can also monitor the health of a [meshlink](https://github.com/firfircelik/network-project)
-encrypted P2P mesh VPN — tunnel path (direct/relay), RTT, rekeys and peer
-availability become part of the same quality score and dashboard. See
-[docs/MESH_INTEGRATION.md](docs/MESH_INTEGRATION.md).
+Optional: monitor a [meshlink](https://github.com/firfircelik/network-project)
+mesh VPN (`schema_version` JSON). HomeNetIQ **observes** the mesh; meshlink
+**runs** it. See [docs/MESH_INTEGRATION.md](docs/MESH_INTEGRATION.md).
 
 > 🇹🇷 Turkish documentation: [README.tr.md](README.tr.md)
 
 ## Architecture
 
-- **Raspberry Pi** — Backend API + SQLite database + network probe (latency + DNS)
-- **Kali Linux MacBook Air** — Wi-Fi probe (`iw` + ping)
-- **TP-Link TL-WR850N** — Lab access point
-- **Optional Mac mini** — Second probe or development host
+Bring your own network. Typical roles (any hardware that fits):
 
-> All commands below are meant to be run from the **repo root**
-> (`HomeNetIQ_v1/`). The only exception is `pip install` and
-> `python -m venv`, which are run inside the backend virtualenv.
+- **Backend host** — FastAPI + SQLite (any Linux; a small board is enough)
+- **Wi-Fi probe** — Linux (`iw` + ping) and/or macOS
+- **Network probe** — gateway / AP / internet latency + DNS (can share the backend host)
+- **Your router and AP** — you set `targets.gateway_ip` / `ap_ip`; nothing is assumed
+
+> All commands below are meant to be run from the **repo root**.
+> The only exception is `pip install` and `python -m venv`, which run inside
+> the backend virtualenv.
 
 ## Quick Start
 
-### 1. Generate an API token
-
-The backend and agents/probes share a Bearer token. Always use a random
-token in production:
+### 1. First run (`make init`)
 
 ```bash
-# 32-byte hex token, plenty strong for local use
-openssl rand -hex 32
+make init
+# writes backend/.env with a random token (gitignored)
+# copies config/*.yaml.example → config/*.yaml if missing
+# leaves gateway_ip / ap_ip empty until you fill YOUR network
 ```
 
-> The value `change-me-local-token` only appears in this README and the
-> example config files. It is **for local testing only** and must not be
-> used on an internet-exposed installation.
+Empty required probe targets **fail loudly** — HomeNetIQ will not invent
+`192.168.1.1`. GET APIs require the Bearer token by default
+(`HOMENETIQ_REQUIRE_GET_AUTH=true`). The example value
+`change-me-local-token` refuses to start unless
+`HOMENETIQ_ALLOW_INSECURE=1`.
 
-### 2. Raspberry Pi backend
+### 2. Backend (any Linux or macOS host)
+
+A Raspberry Pi works; it is **not** required.
 
 ```bash
 # From the repo root
-cp config/backend.env.example backend/.env
-
-# Edit backend/.env and replace HOMENETIQ_API_TOKEN with the value you generated
-cd backend
+set -a && source backend/.env && set +a
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 
-# The database directory (where HOMENETIQ_DB_PATH points) is created
-# automatically on first run. No manual mkdir needed. If you prefer,
-# you can pre-create it: mkdir -p "$(dirname <HOMENETIQ_DB_PATH>)"
-
-cd ..   # back to repo root
-uvicorn backend.app.main:app --host 0.0.0.0 --port 8080
-# or use the helper script: bash scripts/run_backend_dev.sh
+uvicorn backend.app.main:app --host 127.0.0.1 --port 8080
+# LAN: put Caddy in front (contrib/Caddyfile) instead of binding 0.0.0.0
 ```
 
 Health check:
@@ -74,7 +70,9 @@ curl http://127.0.0.1:8080/health
 # {"status":"ok","service":"homenetiq-backend"}
 ```
 
-### 3. Pi network probe (same Pi)
+### 3. Network probe (same host or another)
+
+The probe is optional hardware — a Pi, a VM, or the backend host.
 
 ```bash
 # From the repo root
@@ -101,16 +99,12 @@ python3 collectors/kali_wifi_agent.py --config config/kali_agent.yaml --once
 
 ### 5. Dashboard (any device)
 
-The dashboard calls the backend's GET endpoints. **GET endpoints do not
-require auth** (only `POST /api/v1/metrics` requires the token). The
-dashboard only needs the backend URL.
+The dashboard calls the backend's GET endpoints. **GET auth is on by
+default** — export the same Bearer token as the backend.
 
 ```bash
-# Point at the backend running on the Pi
-export HOMENETIQ_BACKEND_URL="http://192.168.1.50:8080"
-# (The token is technically not required for GETs, but exporting it now
-# means the same variable will work if auth is added later.)
-export HOMENETIQ_API_TOKEN="<token you generated above>"
+export HOMENETIQ_BACKEND_URL="http://YOUR_BACKEND_HOST:8080"
+export HOMENETIQ_API_TOKEN="<token from make init / backend/.env>"
 
 streamlit run dashboard/streamlit_app.py
 ```
@@ -139,7 +133,7 @@ The dashboard opens at <http://localhost:8501>.
 streamlit run dashboard/streamlit_app.py --server.address 0.0.0.0 --server.port 8501
 
 # On the Mac
-export HOMENETIQ_BACKEND_URL="http://192.168.1.50:8080"
+export HOMENETIQ_BACKEND_URL="http://YOUR_BACKEND_HOST:8080"
 streamlit run dashboard/streamlit_app.py
 # Browser: http://<pi-ip>:8501
 ```
@@ -175,7 +169,7 @@ make mesh-once    # one tick; drop --once for the continuous loop
 On the second device (same LAN), no key copying needed:
 
 ```bash
-./scripts/join.sh 192.168.1.113 linux   # <host-ip> [name]
+./scripts/join.sh YOUR_COORDINATOR_HOST linux   # <host-ip> [name]
 ```
 
 It fetches the pinned coordinator public key from the host's backend
@@ -237,12 +231,24 @@ sudo systemctl enable --now homenetiq-mesh-agent
 sudo systemctl status homenetiq-backend --no-pager
 ```
 
+## Docker
+
+```bash
+make init          # token in backend/.env
+docker compose up --build
+```
+
+Dashboard: http://127.0.0.1:8501 (empty Overview until you attach probes).
+Mesh collector is optional: `docker compose --profile mesh up`.
+
+`linux/arm64` (Pi) uses the same compose file.
+
 ## Tests
 
 ```bash
 # Set up the venv and run the suite
 make install
-make test                    # runs all 100 tests
+make test
 ```
 
 Or manually:

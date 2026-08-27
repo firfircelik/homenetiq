@@ -4,18 +4,12 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-# ŞABLONDUR — `scripts/install.sh` bu alanları otomatik doldurur.
-# Elle düzenlerseniz şunları kendi cihazınıza göre değiştirin:
-#   - User=            : Linux kullanıcı adı
-#   - WorkingDirectory : Repo kökü
-#   - ExecStart        : .venv python yolu ve config yolu
-#
-# Gereksinimler:
-#   - meshlink binary'si PATH'te olmalı (bkz. scripts/install.sh)
-#   - config/meshlink_agent.yaml içindeki coord_pubkey doğru olmalı
-User=firat
-WorkingDirectory=/home/firat/homenetiq
-ExecStart=/home/firat/homenetiq/.venv/bin/python collectors/meshlink_agent.py --config config/meshlink_agent.yaml
+# Template — scripts/install.sh fills User= and paths.
+# meshlink-agent must be on PATH; coord_pubkey in config/meshlink_agent.yaml
+# must match your coordinator.
+User=YOUR_USER
+WorkingDirectory=/home/YOUR_USER/homenetiq
+ExecStart=/home/YOUR_USER/homenetiq/.venv/bin/python collectors/meshlink_agent.py --config config/meshlink_agent.yaml
 Restart=always
 RestartSec=5
 

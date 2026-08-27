@@ -246,7 +246,7 @@ def test_network_metric_to_row_extracts_canonical_fields():
         "quality": "poor",
         "quality_score": 30,
         "payload": {
-            "gateway_ip": "192.168.1.1", "ap_ip": "192.168.1.103", "internet_ip": "1.1.1.1",
+            "gateway_ip": "192.0.2.1", "ap_ip": "192.0.2.30", "internet_ip": "1.1.1.1",
             "gateway_latency_ms": 1.0, "ap_latency_ms": 2.0, "internet_latency_ms": 200,
             "dns_latency_ms": 30, "packet_loss_percent": 0, "jitter_ms": 1.5,
         },

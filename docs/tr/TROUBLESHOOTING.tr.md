@@ -14,18 +14,19 @@ Backend çalışmıyor veya farklı host:port'ta.
 # Pi'de
 sudo systemctl status homenetiq-backend
 # veya manuel
-.venv/bin/uvicorn backend.app.main:app --host 0.0.0.0 --port 8080
+.venv/bin/uvicorn backend.app.main:app --host 127.0.0.1 --port 8080
 ```
 
 Dashboard tarafında `HOMENETIQ_BACKEND_URL` doğru mu?
 
 ```bash
-export HOMENETIQ_BACKEND_URL="http://192.168.1.50:8080"
+export HOMENETIQ_BACKEND_URL="http://YOUR_BACKEND_HOST:8080"
 ```
 
 ### 401 Unauthorized
 
-`POST /api/v1/metrics` Bearer token gerekli.
+GET veri uçları ve `POST /api/v1/metrics` Bearer token ister
+(`HOMENETIQ_REQUIRE_GET_AUTH` varsayılan açık).
 
 ```bash
 curl -X POST http://127.0.0.1:8080/api/v1/metrics \
@@ -89,7 +90,7 @@ veya Dashboard **Recommendations** sayfasına bak.
 ### Backend connection refused (agent tarafı)
 
 ```bash
-curl http://192.168.1.50:8080/health
+curl http://YOUR_BACKEND_HOST:8080/health
 ```
 
 Cevap yoksa Pi açık mı, firewall açık mı, IP doğru mu kontrol et.
@@ -116,7 +117,7 @@ Bu bir hata değil; agent doğru çalışıyor, backend erişilemiyor.
 `HOMENETIQ_BACKEND_URL` doğru mu?
 
 ```bash
-HOMENETIQ_BACKEND_URL=http://192.168.1.50:8080 \
+HOMENETIQ_BACKEND_URL=http://YOUR_BACKEND_HOST:8080 \
   python3 -m streamlit run dashboard/streamlit_app.py
 ```
 
@@ -143,13 +144,13 @@ sudo systemctl list-unit-files | grep homenetiq
 `ExecStart` yolu yanlış. Kontrol:
 
 ```bash
-ls -la /home/pi/homenetiq/.venv/bin/uvicorn
+ls -la /home/YOUR_USER/homenetiq/.venv/bin/uvicorn
 ```
 
 ### "Permission denied" / .env okunamıyor
 
 ```bash
-chmod 600 /home/pi/homenetiq/backend/.env
+chmod 600 /home/YOUR_USER/homenetiq/backend/.env
 ```
 
 ### Servis restart-loop
@@ -161,7 +162,7 @@ sudo journalctl -u homenetiq-backend -n 100 --no-pager
 Elle çalıştır:
 
 ```bash
-cd /home/pi/homenetiq
+cd /home/YOUR_USER/homenetiq
 HOMENETIQ_API_TOKEN=test-tok python3 -m uvicorn backend.app.main:app
 ```
 

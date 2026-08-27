@@ -1,12 +1,12 @@
 device:
-  id: "kali-macbook-air"
-  name: "Kali MacBook Air 2015"
+  id: "linux-wifi-1"
+  name: "Linux Wi-Fi probe"
   type: "wifi_probe"
-  os: "kali-linux"
+  os: "linux"
   agent_version: "1.0.0"
 
 backend:
-  url: "http://192.168.1.50:8080/api/v1/metrics"
+  url: "http://YOUR_BACKEND_HOST:8080/api/v1/metrics"
   token: "change-me-local-token"
 
 collector:
@@ -17,9 +17,9 @@ collector:
 
 privacy:
   mode: "redact"      # "redact" | "hash"
-  salt: ""            # hash modunda kullanılır; sabit salt KULLANILMAZ
+  salt: ""            # used in hash mode; do not use a fixed public salt
 
 targets:
-  gateway_ip: "192.168.1.1"
-  ap_ip: "192.168.1.103"
+  gateway_ip: ""      # your router LAN IP
+  ap_ip: ""           # optional AP management IP
   internet_ip: "1.1.1.1"
